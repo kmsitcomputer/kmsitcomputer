@@ -449,6 +449,29 @@ export function SystemPage() {
           </div>
         </div>
       </SettingsCard>
+      <SettingsCard title="Deploy ke Web Server" desc="Website ini build statis — tinggal unggah dan langsung jalan">
+        <div className="space-y-3">
+          {[
+            { n: "1", t: "Build produksi", d: "Jalankan di komputer development Anda:", code: "npm run build" },
+            { n: "2", t: "Unggah isi folder dist/", d: "Upload SELURUH isi dist/ (index.html, assets/, .htaccess, robots.txt, sitemap.xml, manifest…) ke web server:", code: "cPanel / FTP  →  public_html/\nVPS (nginx)   →  /var/www/kmsit  (lihat nginx.conf)\nNetlify/Vercel → otomatis via _redirects" },
+            { n: "3", t: "Buka domain Anda", d: "Hash-routing (/#/…) membuat semua halaman bekerja TANPA konfigurasi rewrite. Installer berjalan sekali saat pertama dibuka, lalu terkunci otomatis.", code: "https://domainanda.com/" },
+          ].map((s) => (
+            <div key={s.n} className="rounded-xl border border-ink-200 dark:border-ink-700 p-4">
+              <p className="flex items-center gap-2.5 text-sm font-bold text-ink-800 dark:text-ink-50">
+                <span className="w-6 h-6 rounded-lg bg-brand-600 text-white font-display text-[12px] flex items-center justify-center shrink-0">{s.n}</span>{s.t}
+              </p>
+              <p className="text-[12.5px] text-ink-500 dark:text-ink-300 mt-1.5 ml-[34px]">{s.d}</p>
+              <pre className="mt-2 ml-[34px] rounded-lg bg-ink-900 dark:bg-ink-950 border border-ink-800 px-3.5 py-2.5 text-[12px] font-mono text-brand-200 overflow-x-auto whitespace-pre">{s.code}</pre>
+            </div>
+          ))}
+          <div className="flex flex-wrap gap-2">
+            {[".htaccess (Apache + keamanan + cache)", "nginx.conf (VPS)", "_redirects (Netlify)", "robots.txt", "sitemap.xml", "manifest.webmanifest (PWA)", "icon.svg (favicon)"].map((f) => (
+              <span key={f} className="px-2.5 py-1 rounded-md bg-ok-500/10 border border-ok-500/30 text-[11px] font-mono font-bold text-ok-600 dark:text-ok-500">✓ {f}</span>
+            ))}
+          </div>
+          <p className="text-[12px] text-ink-400 leading-relaxed">Catatan: ganti <code className="font-mono bg-ink-100 dark:bg-ink-800 px-1 rounded">domainanda.com</code> di sitemap.xml & robots.txt dengan domain Anda. Unggah ke <b>root domain</b> (public_html) karena aset build menggunakan path absolut dari root.</p>
+        </div>
+      </SettingsCard>
       <SettingsCard title="Danger Zone" desc="Tindakan destruktif — hati-hati">
         <div className="rounded-xl border border-bad-500/40 bg-bad-500/5 p-4">
           <p className="text-sm font-bold text-bad-500 flex items-center gap-2"><AlertTriangle size={15} />Reset Instalasi</p>

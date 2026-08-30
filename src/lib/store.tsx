@@ -55,7 +55,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     document.title = db.settings.seo.title || `${db.settings.siteName} — LMS & CMS Platform`;
     const link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
     if (link && db.settings.faviconUrl) link.href = db.settings.faviconUrl;
-    else if (link) link.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230C1412'/%3E%3Cpath d='M9 11l5 5-5 5' stroke='%232CC5B0' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16.5 21h7' stroke='%23E8A33D' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E";
+    else if (link) link.href = "icon.svg";
   }, [db?.settings.siteName, db?.settings.seo.title, db?.settings.faviconUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Warna identitas website → override CSS variables tema secara live

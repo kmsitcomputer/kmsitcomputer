@@ -1,0 +1,14 @@
+{
+  "name": "KMSIT Computer — LMS & CMS Platform",
+  "short_name": "KMSIT",
+  "description": "Platform LMS & CMS: kelas online, tutorial, artikel, berita, quiz, dan sertifikat digital.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#101a17",
+  "theme_color": "#0e8a75",
+  "lang": "id",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "https://image.qwenlm.ai/generated-images/3f604b9b-e51e-458d-9d6a-5a5bf5675bb7/_result.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

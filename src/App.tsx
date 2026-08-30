@@ -1,9 +1,12 @@
+import { lazy, Suspense } from "react";
 import { HashRouter, Routes, Route, Navigate, useParams, Link } from "react-router-dom";
 import { ShieldX } from "lucide-react";
 import { AppProvider, useApp } from "./lib/store";
 import { PublicShell, DashShell, dashMenu, roleBase } from "./components/shell";
 import { ToastHost, Btn } from "./components/ui";
+import { ErrorBoundary } from "./components/error-boundary";
 import { fmtDate } from "./lib/db";
+// Halaman situs publik, auth & installer dimuat langsung (first paint)
 import {
   HomePage, CoursesPage, CourseDetailPage, ArticlesPage, NewsPage, TutorialsPage,
   ArticleDetail, NewsDetail, TutorialDetail, ProgramsPage, ProgramDetail, AboutPage, CustomPage,
@@ -11,13 +14,59 @@ import {
 } from "./pages/public";
 import { LoginPage, RegisterPage, ForgotPage } from "./pages/auth";
 import { InstallPage } from "./pages/install";
-import { LearnPlayer, CertificatePage } from "./pages/learn";
-import { SuperAdminOverview, AdminOverview, InstructorOverview, StudentOverview } from "./pages/dash";
-import { ContentManager, PagesManager, ProgramsManager, HomeCMS, AboutCMS, OrgCms, MenuManager, MediaManager } from "./pages/dash-content";
-import { CoursesManager, QuizManager, StudentsManager, InstructorsManager, CertificatesManager, MyCoursesPage, GradesPage, StudentPaymentsPage } from "./pages/dash-lms";
-import { PaymentsManager, TransactionsManager, WithdrawalsManager, WalletPage, GatewayPage } from "./pages/dash-money";
-import { WebsiteSettings, SeoSettings, LanguageSettings, UsersManager, RolesManager, SystemPage, ActivityPage, IntegrationsPage } from "./pages/dash-system";
-import { Award } from "lucide-react";
+// Modul berat di-code-split: diunduh hanya saat dibutuhkan
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function lazyNamed<M>(factory: () => Promise<M>, select: (m: M) => React.ComponentType<any>): React.LazyExoticComponent<React.ComponentType<any>> {
+  return lazy(async () => ({ default: select(await factory()) }));
+}
+const LearnPlayer = lazyNamed(() => import("./pages/learn"), (m) => m.LearnPlayer);
+const CertificatePage = lazyNamed(() => import("./pages/learn"), (m) => m.CertificatePage);
+const SuperAdminOverview = lazyNamed(() => import("./pages/dash"), (m) => m.SuperAdminOverview);
+const AdminOverview = lazyNamed(() => import("./pages/dash"), (m) => m.AdminOverview);
+const InstructorOverview = lazyNamed(() => import("./pages/dash"), (m) => m.InstructorOverview);
+const StudentOverview = lazyNamed(() => import("./pages/dash"), (m) => m.StudentOverview);
+const ContentManager = lazyNamed(() => import("./pages/dash-content"), (m) => m.ContentManager);
+const PagesManager = lazyNamed(() => import("./pages/dash-content"), (m) => m.PagesManager);
+const ProgramsManager = lazyNamed(() => import("./pages/dash-content"), (m) => m.ProgramsManager);
+const HomeCMS = lazyNamed(() => import("./pages/dash-content"), (m) => m.HomeCMS);
+const AboutCMS = lazyNamed(() => import("./pages/dash-content"), (m) => m.AboutCMS);
+const OrgCms = lazyNamed(() => import("./pages/dash-content"), (m) => m.OrgCms);
+const MenuManager = lazyNamed(() => import("./pages/dash-content"), (m) => m.MenuManager);
+const MediaManager = lazyNamed(() => import("./pages/dash-content"), (m) => m.MediaManager);
+const CoursesManager = lazyNamed(() => import("./pages/dash-lms"), (m) => m.CoursesManager);
+const QuizManager = lazyNamed(() => import("./pages/dash-lms"), (m) => m.QuizManager);
+const StudentsManager = lazyNamed(() => import("./pages/dash-lms"), (m) => m.StudentsManager);
+const InstructorsManager = lazyNamed(() => import("./pages/dash-lms"), (m) => m.InstructorsManager);
+const CertificatesManager = lazyNamed(() => import("./pages/dash-lms"), (m) => m.CertificatesManager);
+const MyCoursesPage = lazyNamed(() => import("./pages/dash-lms"), (m) => m.MyCoursesPage);
+const GradesPage = lazyNamed(() => import("./pages/dash-lms"), (m) => m.GradesPage);
+const StudentPaymentsPage = lazyNamed(() => import("./pages/dash-lms"), (m) => m.StudentPaymentsPage);
+const PaymentsManager = lazyNamed(() => import("./pages/dash-money"), (m) => m.PaymentsManager);
+const TransactionsManager = lazyNamed(() => import("./pages/dash-money"), (m) => m.TransactionsManager);
+const WithdrawalsManager = lazyNamed(() => import("./pages/dash-money"), (m) => m.WithdrawalsManager);
+const WalletPage = lazyNamed(() => import("./pages/dash-money"), (m) => m.WalletPage);
+const GatewayPage = lazyNamed(() => import("./pages/dash-money"), (m) => m.GatewayPage);
+const WebsiteSettings = lazyNamed(() => import("./pages/dash-system"), (m) => m.WebsiteSettings);
+const SeoSettings = lazyNamed(() => import("./pages/dash-system"), (m) => m.SeoSettings);
+const LanguageSettings = lazyNamed(() => import("./pages/dash-system"), (m) => m.LanguageSettings);
+const UsersManager = lazyNamed(() => import("./pages/dash-system"), (m) => m.UsersManager);
+const RolesManager = lazyNamed(() => import("./pages/dash-system"), (m) => m.RolesManager);
+const SystemPage = lazyNamed(() => import("./pages/dash-system"), (m) => m.SystemPage);
+const ActivityPage = lazyNamed(() => import("./pages/dash-system"), (m) => m.ActivityPage);
+const IntegrationsPage = lazyNamed(() => import("./pages/dash-system"), (m) => m.IntegrationsPage);
+
+function PageLoader() {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 gap-4">
+      <span className="relative w-12 h-12">
+        <span className="absolute inset-0 rounded-xl border-2 border-brand-500/25" />
+        <span className="absolute inset-0 rounded-xl border-2 border-transparent border-t-brand-500 spin" />
+        <span className="absolute inset-[9px] rounded-md bg-brand-500/15" />
+      </span>
+      <p className="font-mono text-[12px] text-ink-400">memuat modul<span className="cursor-blink">▊</span></p>
+    </div>
+  );
+}
 
 function InstallGate({ children }: { children: React.ReactNode }) {
   const { db } = useApp();
@@ -118,9 +167,7 @@ function StudentCertificates() {
       </div>
       {certs.length === 0 ? (
         <div className="rounded-xl border border-dashed border-ink-200 dark:border-ink-700 py-14 text-center">
-          <Award size={22} className="mx-auto text-ink-300" />
-          <p className="mt-3 font-display font-semibold text-ink-700 dark:text-ink-100">Belum ada sertifikat</p>
-          <p className="text-sm text-ink-400 mt-1">Selesaikan kelas dan lulus quiz akhir untuk mendapat sertifikat.</p>
+          <p className="text-sm text-ink-400">Selesaikan kelas dan lulus quiz akhir untuk mendapat sertifikat.</p>
           <Link to="/courses" className="inline-block mt-4"><Btn size="sm">Cari Kelas</Btn></Link>
         </div>
       ) : (
@@ -129,13 +176,8 @@ function StudentCertificates() {
             const course = db.courses.find((x) => x.id === c.courseId);
             return (
               <Link key={c.id} to={`/certificate/${c.code}`} className="group rounded-xl border border-accent-400/40 bg-card dark:bg-ink-900 p-5 hover:shadow-pop transition-all">
-                <div className="flex items-center gap-3">
-                  <span className="w-11 h-11 rounded-xl bg-accent-500/15 text-accent-600 dark:text-accent-300 flex items-center justify-center"><Award size={20} /></span>
-                  <div className="min-w-0">
-                    <p className="font-display font-semibold text-ink-900 dark:text-white leading-snug">{course?.title}</p>
-                    <p className="text-[11.5px] font-mono text-ink-400 mt-0.5">{c.code} · {fmtDate(c.issuedAt)}</p>
-                  </div>
-                </div>
+                <p className="font-display font-semibold text-ink-900 dark:text-white leading-snug">{course?.title}</p>
+                <p className="text-[11.5px] font-mono text-ink-400 mt-1">{c.code} · {fmtDate(c.issuedAt)}</p>
                 <p className="mt-3 text-[12px] font-bold text-brand-600 dark:text-brand-300 group-hover:underline underline-offset-2">Lihat & unduh sertifikat →</p>
               </Link>
             );
@@ -161,35 +203,37 @@ function Shell() {
   const { db } = useApp();
   return (
     <>
-      <Routes>
-        <Route path="/install" element={<InstallPage />} />
-        <Route path="/login" element={<LoginGate><LoginPage /></LoginGate>} />
-        <Route path="/register" element={<LoginGate><RegisterPage /></LoginGate>} />
-        <Route path="/forgot" element={<LoginGate><ForgotPage /></LoginGate>} />
-        <Route path="/certificate/:code" element={<InstallGate><CertificatePage /></InstallGate>} />
-        <Route path="/learn/:courseId" element={<InstallGate><LearnPlayer /></InstallGate>} />
-        <Route path="/learn/:courseId/:lessonId" element={<InstallGate><LearnPlayer /></InstallGate>} />
-        <Route path="/verify-certificate" element={<InstallGate><PublicShell><VerifyCertificatePage /></PublicShell></InstallGate>} />
-        <Route path="/verify-certificate/:id" element={<InstallGate><PublicShell><VerifyCertificatePage /></PublicShell></InstallGate>} />
-        <Route element={<InstallGate><PublicGate><PublicShell /></PublicGate></InstallGate>}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/courses" element={<CoursesPage />} />
-          <Route path="/courses/:slug" element={<CourseDetailPage />} />
-          <Route path="/articles" element={<ArticlesPage />} />
-          <Route path="/articles/:slug" element={<ArticleDetail />} />
-          <Route path="/news" element={<NewsPage />} />
-          <Route path="/news/:slug" element={<NewsDetail />} />
-          <Route path="/tutorials" element={<TutorialsPage />} />
-          <Route path="/tutorials/:slug" element={<TutorialDetail />} />
-          <Route path="/programs" element={<ProgramsPage />} />
-          <Route path="/programs/:slug" element={<ProgramDetail />} />
-          <Route path="/page/:slug" element={<CustomPage />} />
-        </Route>
-        <Route path="/dashboard" element={<RoleRedirect />} />
-        <Route path="/dashboard/:role/*" element={<InstallGate><DashShell><DashArea /></DashShell></InstallGate>} />
-        <Route path="*" element={db ? <PublicShell><NotFound /></PublicShell> : <Navigate to="/install" replace />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/install" element={<InstallPage />} />
+          <Route path="/login" element={<LoginGate><LoginPage /></LoginGate>} />
+          <Route path="/register" element={<LoginGate><RegisterPage /></LoginGate>} />
+          <Route path="/forgot" element={<LoginGate><ForgotPage /></LoginGate>} />
+          <Route path="/certificate/:code" element={<InstallGate><CertificatePage /></InstallGate>} />
+          <Route path="/learn/:courseId" element={<InstallGate><LearnPlayer /></InstallGate>} />
+          <Route path="/learn/:courseId/:lessonId" element={<InstallGate><LearnPlayer /></InstallGate>} />
+          <Route path="/verify-certificate" element={<InstallGate><PublicShell><VerifyCertificatePage /></PublicShell></InstallGate>} />
+          <Route path="/verify-certificate/:id" element={<InstallGate><PublicShell><VerifyCertificatePage /></PublicShell></InstallGate>} />
+          <Route element={<InstallGate><PublicGate><PublicShell /></PublicGate></InstallGate>}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/courses" element={<CoursesPage />} />
+            <Route path="/courses/:slug" element={<CourseDetailPage />} />
+            <Route path="/articles" element={<ArticlesPage />} />
+            <Route path="/articles/:slug" element={<ArticleDetail />} />
+            <Route path="/news" element={<NewsPage />} />
+            <Route path="/news/:slug" element={<NewsDetail />} />
+            <Route path="/tutorials" element={<TutorialsPage />} />
+            <Route path="/tutorials/:slug" element={<TutorialDetail />} />
+            <Route path="/programs" element={<ProgramsPage />} />
+            <Route path="/programs/:slug" element={<ProgramDetail />} />
+            <Route path="/page/:slug" element={<CustomPage />} />
+          </Route>
+          <Route path="/dashboard" element={<RoleRedirect />} />
+          <Route path="/dashboard/:role/*" element={<InstallGate><DashShell><DashArea /></DashShell></InstallGate>} />
+          <Route path="*" element={db ? <PublicShell><NotFound /></PublicShell> : <Navigate to="/install" replace />} />
+        </Routes>
+      </Suspense>
       <ToastHost />
     </>
   );
@@ -199,7 +243,9 @@ export default function App() {
   return (
     <AppProvider>
       <HashRouter>
-        <Shell />
+        <ErrorBoundary>
+          <Shell />
+        </ErrorBoundary>
       </HashRouter>
     </AppProvider>
   );
