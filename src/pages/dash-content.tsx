@@ -362,6 +362,117 @@ export function AboutCMS() {
   );
 }
 
+// ─── Struktur Organisasi CMS ────────────────────────────────────────────────
+const LEVEL_LABEL: Record<string, string> = { board: "Pimpinan / Dewan", division: "Divisi", team: "Tim / Unit" };
+export function OrgCms() {
+  const { db, update, toast, log } = useApp();
+  const [unitModal, setUnitModal] = useState<{ id: string | null; name: string; tagline: string; level: string } | null>(null);
+  const [memberModal, setMemberModal] = useState<{ unitId: string; id: string | null; name: string; position: string; email: string } | null>(null);
+  if (!db) return null;
+  const units = [...db.orgUnits].sort((a, b) => a.order - b.order);
+  const moveUnit = (id: string, dir: -1 | 1) => update((d) => {
+    const s = [...d.orgUnits].sort((a, b) => a.order - b.order);
+    const i = s.findIndex((x) => x.id === id), j = i + dir;
+    if (i < 0 || j < 0 || j >= s.length) return;
+    const a = d.orgUnits.find((x) => x.id === s[i].id)!, b = d.orgUnits.find((x) => x.id === s[j].id)!;
+    const t = a.order; a.order = b.order; b.order = t;
+  });
+  const moveMember = (unitId: string, id: string, dir: -1 | 1) => update((d) => {
+    const s = d.orgMembers.filter((m) => m.unitId === unitId).sort((a, b) => a.order - b.order);
+    const i = s.findIndex((x) => x.id === id), j = i + dir;
+    if (i < 0 || j < 0 || j >= s.length) return;
+    const a = d.orgMembers.find((x) => x.id === s[i].id)!, b = d.orgMembers.find((x) => x.id === s[j].id)!;
+    const t = a.order; a.order = b.order; b.order = t;
+  });
+  return (
+    <div>
+      <DashHead title="Struktur Organisasi" desc="Blok CMS yang tampil di halaman Tentang Kami — unit & anggota bisa ditambah, diubah, dihapus, dan diurutkan"
+        action={<div className="flex gap-2">
+          <Link to="/about"><Btn variant="outline" size="sm"><ExternalLink size={14} />Lihat Halaman</Btn></Link>
+          <Btn onClick={() => setUnitModal({ id: null, name: "", tagline: "", level: "division" })}><Plus size={16} />Unit Baru</Btn>
+        </div>} />
+      <div className="space-y-4">
+        {units.map((u, ui) => {
+          const members = db.orgMembers.filter((m) => m.unitId === u.id).sort((a, b) => a.order - b.order);
+          return (
+            <div key={u.id} className="rounded-xl border border-ink-100 dark:border-ink-800 bg-card dark:bg-ink-900 overflow-hidden">
+              <div className="flex items-center gap-3 px-4 py-3.5 bg-ink-50/60 dark:bg-ink-850 border-b border-ink-100 dark:border-ink-800">
+                <span className={cx("w-9 h-9 rounded-lg flex items-center justify-center font-display font-bold text-white shrink-0", u.level === "board" ? "bg-accent-500" : "bg-brand-600")}>{u.name[0]}</span>
+                <div className="grow min-w-0">
+                  <p className="text-sm font-bold text-ink-900 dark:text-white">{u.name}</p>
+                  <p className="text-[11.5px] font-mono text-ink-400 truncate">{u.tagline || "—"} · {members.length} anggota</p>
+                </div>
+                <Badge tone={u.level === "board" ? "accent" : u.level === "division" ? "brand" : "neutral"}>{LEVEL_LABEL[u.level]}</Badge>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => moveUnit(u.id, -1)} disabled={ui === 0} className="rounded-lg p-1.5 text-ink-400 hover:text-brand-600 hover:bg-brand-500/10 disabled:opacity-25"><ArrowUp size={14} /></button>
+                  <button onClick={() => moveUnit(u.id, 1)} disabled={ui === units.length - 1} className="rounded-lg p-1.5 text-ink-400 hover:text-brand-600 hover:bg-brand-500/10 disabled:opacity-25"><ArrowDown size={14} /></button>
+                  <button onClick={() => setUnitModal({ id: u.id, name: u.name, tagline: u.tagline, level: u.level })} className="rounded-lg p-1.5 text-ink-400 hover:text-brand-600 hover:bg-brand-500/10"><Pencil size={14} /></button>
+                  <button onClick={() => { update((d) => { d.orgUnits = d.orgUnits.filter((x) => x.id !== u.id); d.orgMembers = d.orgMembers.filter((m) => m.unitId !== u.id); }); log("org_unit_deleted", `Unit “${u.name}” dihapus`); toast("Unit beserta anggotanya dihapus", "info"); }} className="rounded-lg p-1.5 text-ink-400 hover:text-bad-500 hover:bg-bad-500/10"><Trash2 size={14} /></button>
+                </div>
+              </div>
+              {members.map((m, mi) => (
+                <div key={m.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-ink-100/70 dark:border-ink-800/70 last:border-0">
+                  <span className="w-7 h-7 rounded-lg bg-ink-100 dark:bg-ink-800 text-ink-500 dark:text-ink-300 text-[11px] font-mono font-bold flex items-center justify-center shrink-0">{mi + 1}</span>
+                  <div className="grow min-w-0">
+                    <p className="text-[13.5px] font-semibold text-ink-800 dark:text-ink-50">{m.name} <span className="text-ink-400 font-normal">· {m.position}</span></p>
+                    {m.email && <p className="text-[10.5px] font-mono text-ink-400">{m.email}</p>}
+                  </div>
+                  <button onClick={() => moveMember(u.id, m.id, -1)} disabled={mi === 0} className="rounded p-1 text-ink-400 hover:text-brand-600 disabled:opacity-25"><ArrowUp size={13} /></button>
+                  <button onClick={() => moveMember(u.id, m.id, 1)} disabled={mi === members.length - 1} className="rounded p-1 text-ink-400 hover:text-brand-600 disabled:opacity-25"><ArrowDown size={13} /></button>
+                  <button onClick={() => setMemberModal({ unitId: u.id, id: m.id, name: m.name, position: m.position, email: m.email ?? "" })} className="rounded p-1 text-ink-400 hover:text-brand-600"><Pencil size={13} /></button>
+                  <button onClick={() => { update((d) => { d.orgMembers = d.orgMembers.filter((x) => x.id !== m.id); }); toast("Anggota dihapus", "info"); }} className="rounded p-1 text-ink-400 hover:text-bad-500"><Trash2 size={13} /></button>
+                </div>
+              ))}
+              <button onClick={() => setMemberModal({ unitId: u.id, id: null, name: "", position: "", email: "" })}
+                className="w-full px-4 py-2.5 text-[13px] font-bold text-brand-600 dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-ink-850 flex items-center gap-2 transition-colors"><Plus size={14} />Tambah Anggota</button>
+            </div>
+          );
+        })}
+        {units.length === 0 && <EmptyState icon={<LayoutTemplate size={20} />} title="Belum ada unit" desc="Tambahkan unit struktur organisasi pertama." action={<Btn size="sm" onClick={() => setUnitModal({ id: null, name: "", tagline: "", level: "division" })}>Tambah Unit</Btn>} />}
+      </div>
+
+      <Modal open={!!unitModal} onClose={() => setUnitModal(null)} title={unitModal?.id ? "Ubah Unit" : "Unit Baru"}
+        footer={<><Btn variant="ghost" onClick={() => setUnitModal(null)}>Batal</Btn><Btn onClick={() => {
+          if (!unitModal || !unitModal.name.trim()) { toast("Nama unit wajib diisi", "warn"); return; }
+          update((d) => {
+            if (unitModal.id) {
+              const x = d.orgUnits.find((y) => y.id === unitModal.id);
+              if (x) { x.name = unitModal.name.trim(); x.tagline = unitModal.tagline; x.level = unitModal.level as typeof x.level; }
+            } else d.orgUnits.push({ id: uid(), name: unitModal.name.trim(), tagline: unitModal.tagline, level: unitModal.level as "board" | "division" | "team", order: d.orgUnits.length + 1 });
+          });
+          log("org_unit_saved", `Unit “${unitModal.name}” disimpan`); toast("Unit disimpan", "ok"); setUnitModal(null);
+        }}>Simpan</Btn></>}>
+        {unitModal && (
+          <div className="space-y-4">
+            <Field label="Nama unit"><TextInput autoFocus value={unitModal.name} onChange={(e) => setUnitModal({ ...unitModal, name: e.target.value })} placeholder="cth: Divisi Akademik" /></Field>
+            <Field label="Deskripsi singkat"><TextInput value={unitModal.tagline} onChange={(e) => setUnitModal({ ...unitModal, tagline: e.target.value })} placeholder="Tugas & fungsi unit" /></Field>
+            <Field label="Tingkat"><Select value={unitModal.level} onChange={(e) => setUnitModal({ ...unitModal, level: e.target.value })}><option value="board">Pimpinan / Dewan (ditampilkan besar)</option><option value="division">Divisi</option><option value="team">Tim / Unit kecil</option></Select></Field>
+          </div>
+        )}
+      </Modal>
+      <Modal open={!!memberModal} onClose={() => setMemberModal(null)} title={memberModal?.id ? "Ubah Anggota" : "Anggota Baru"}
+        footer={<><Btn variant="ghost" onClick={() => setMemberModal(null)}>Batal</Btn><Btn onClick={() => {
+          if (!memberModal || !memberModal.name.trim() || !memberModal.position.trim()) { toast("Nama & jabatan wajib diisi", "warn"); return; }
+          update((d) => {
+            if (memberModal.id) {
+              const x = d.orgMembers.find((y) => y.id === memberModal.id);
+              if (x) { x.name = memberModal.name.trim(); x.position = memberModal.position.trim(); x.email = memberModal.email.trim() || undefined; }
+            } else d.orgMembers.push({ id: uid(), unitId: memberModal.unitId, name: memberModal.name.trim(), position: memberModal.position.trim(), email: memberModal.email.trim() || undefined, order: d.orgMembers.filter((m) => m.unitId === memberModal.unitId).length + 1 });
+          });
+          toast("Anggota disimpan", "ok"); setMemberModal(null);
+        }}>Simpan</Btn></>}>
+        {memberModal && (
+          <div className="space-y-4">
+            <Field label="Nama"><TextInput autoFocus value={memberModal.name} onChange={(e) => setMemberModal({ ...memberModal, name: e.target.value })} /></Field>
+            <Field label="Jabatan"><TextInput value={memberModal.position} onChange={(e) => setMemberModal({ ...memberModal, position: e.target.value })} placeholder="cth: Kepala Divisi" /></Field>
+            <Field label="Email (opsional)"><TextInput value={memberModal.email} onChange={(e) => setMemberModal({ ...memberModal, email: e.target.value })} placeholder="nama@kmsit.id" /></Field>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+}
+
 // ─── Menu manager ───────────────────────────────────────────────────────────
 export function MenuManager() {
   const { db, update, toast, log } = useApp();

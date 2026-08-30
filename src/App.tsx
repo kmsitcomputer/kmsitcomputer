@@ -13,7 +13,7 @@ import { LoginPage, RegisterPage, ForgotPage } from "./pages/auth";
 import { InstallPage } from "./pages/install";
 import { LearnPlayer, CertificatePage } from "./pages/learn";
 import { SuperAdminOverview, AdminOverview, InstructorOverview, StudentOverview } from "./pages/dash";
-import { ContentManager, PagesManager, ProgramsManager, HomeCMS, AboutCMS, MenuManager, MediaManager } from "./pages/dash-content";
+import { ContentManager, PagesManager, ProgramsManager, HomeCMS, AboutCMS, OrgCms, MenuManager, MediaManager } from "./pages/dash-content";
 import { CoursesManager, QuizManager, StudentsManager, InstructorsManager, CertificatesManager, MyCoursesPage, GradesPage, StudentPaymentsPage } from "./pages/dash-lms";
 import { PaymentsManager, TransactionsManager, WithdrawalsManager, WalletPage, GatewayPage } from "./pages/dash-money";
 import { WebsiteSettings, SeoSettings, LanguageSettings, UsersManager, RolesManager, SystemPage, ActivityPage, IntegrationsPage } from "./pages/dash-system";
@@ -83,6 +83,7 @@ function DashArea() {
       <Route path="programs" element={<Guard seg="programs"><ProgramsManager /></Guard>} />
       <Route path="home-cms" element={<Guard seg="home-cms"><HomeCMS /></Guard>} />
       <Route path="about-cms" element={<Guard seg="about-cms"><AboutCMS /></Guard>} />
+      <Route path="org-cms" element={<Guard seg="org-cms"><OrgCms /></Guard>} />
       <Route path="menus" element={<Guard seg="menus"><MenuManager /></Guard>} />
       <Route path="payments" element={<Guard seg="payments">{user.role === "student" ? <StudentPaymentsPage /> : <PaymentsManager />}</Guard>} />
       <Route path="transactions" element={<Guard seg="transactions"><TransactionsManager /></Guard>} />

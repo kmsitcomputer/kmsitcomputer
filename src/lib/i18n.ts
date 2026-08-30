@@ -29,6 +29,7 @@ const dict: Record<string, { id: string; en: string }> = {
   "dash.cms": { id: "CMS", en: "CMS" },
   "dash.home": { id: "Home", en: "Home" },
   "dash.about": { id: "About Us", en: "About Us" },
+  "dash.org": { id: "Struktur Organisasi", en: "Organization" },
   "dash.menus": { id: "Menu", en: "Menus" },
   "dash.transactions": { id: "Transaksi", en: "Transactions" },
   "dash.payments": { id: "Pembayaran", en: "Payments" },

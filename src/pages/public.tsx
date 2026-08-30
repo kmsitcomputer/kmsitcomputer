@@ -623,6 +623,60 @@ export function AboutPage() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
         {page && <article className="prose-cms text-ink-700 dark:text-ink-100" dangerouslySetInnerHTML={{ __html: page.content }} />}
       </div>
+      {db.orgUnits.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-14">
+          <SectionHead title="Struktur Organisasi" subtitle="Tata kelola lembaga yang transparan — dikelola langsung dari CMS." />
+          <div className="space-y-6">
+            {db.orgUnits.filter((u) => u.level === "board").sort((a, b) => a.order - b.order).map((u) => {
+              const members = db.orgMembers.filter((m) => m.unitId === u.id).sort((a, b) => a.order - b.order);
+              return (
+                <Reveal key={u.id}>
+                  <div className="rounded-2xl border border-ink-100 dark:border-ink-800 bg-ink-900 dark:bg-ink-900 text-white overflow-hidden relative">
+                    <div className="absolute inset-0 grid-bg opacity-40" />
+                    <div className="relative px-6 py-5 flex flex-wrap items-center gap-4 border-b border-white/5">
+                      <span className="w-10 h-10 rounded-xl flex items-center justify-center font-display font-bold text-ink-900" style={{ background: db.settings.accentColor }}>{u.name[0]}</span>
+                      <div><p className="font-display font-bold text-lg">{u.name}</p><p className="text-[12.5px] text-ink-300">{u.tagline}</p></div>
+                      <span className="ml-auto text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded-md" style={{ background: `${db.settings.accentColor}22`, color: db.settings.accentColor }}>Pimpinan</span>
+                    </div>
+                    <div className="relative grid sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-white/5">
+                      {members.map((m) => (
+                        <div key={m.id} className="px-6 py-4 hover:bg-white/[0.04] transition-colors">
+                          <p className="font-bold text-[14px]">{m.name}</p>
+                          <p className="text-[12px] font-mono" style={{ color: db.settings.accentColor }}>{m.position}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Reveal>
+              );
+            })}
+            <div className="grid md:grid-cols-2 gap-5">
+              {db.orgUnits.filter((u) => u.level !== "board").sort((a, b) => a.order - b.order).map((u, i) => {
+                const members = db.orgMembers.filter((m) => m.unitId === u.id).sort((a, b) => a.order - b.order);
+                return (
+                  <Reveal key={u.id} delay={i * 70}>
+                    <div className="rounded-xl border border-ink-100 dark:border-ink-800 bg-card dark:bg-ink-900 overflow-hidden hover:shadow-lift transition-all h-full">
+                      <div className="px-5 py-4 border-b border-ink-100 dark:border-ink-800 flex items-center gap-3">
+                        <span className="w-9 h-9 rounded-lg flex items-center justify-center font-display font-bold text-white shrink-0" style={{ background: db.settings.brandColor }}>{u.name[0]}</span>
+                        <div className="min-w-0"><p className="font-display font-bold text-[14.5px] text-ink-900 dark:text-white truncate">{u.name}</p><p className="text-[11.5px] text-ink-400 truncate">{u.tagline}</p></div>
+                      </div>
+                      <div className="px-5 py-3 space-y-2.5">
+                        {members.map((m) => (
+                          <div key={m.id} className="flex items-center justify-between gap-3 text-[13px]">
+                            <span className="font-semibold text-ink-700 dark:text-ink-100">{m.name}</span>
+                            <span className="text-[11.5px] font-mono text-ink-400 text-right">{m.position}</span>
+                          </div>
+                        ))}
+                        {members.length === 0 && <p className="text-xs text-ink-400 py-2">Belum ada anggota.</p>}
+                      </div>
+                    </div>
+                  </Reveal>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-4">
         <SectionHead title="Tim Instruktur" subtitle="Praktisi aktif yang mengajar dari pengalaman nyata." />
         <div className="grid sm:grid-cols-3 gap-5">

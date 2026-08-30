@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
-  buildSeedDB, loadDB, loadSession, saveDB, saveSession, uid, wipeAll,
+  buildSeedDB, isValidHex, loadDB, loadSession, saveDB, saveSession, shadeScale, uid, wipeAll,
   type DB, type Lang, type User,
 } from "./db";
 import { translate } from "./i18n";
@@ -57,6 +57,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (link && db.settings.faviconUrl) link.href = db.settings.faviconUrl;
     else if (link) link.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230C1412'/%3E%3Cpath d='M9 11l5 5-5 5' stroke='%232CC5B0' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16.5 21h7' stroke='%23E8A33D' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E";
   }, [db?.settings.siteName, db?.settings.seo.title, db?.settings.faviconUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Warna identitas website → override CSS variables tema secara live
+  useEffect(() => {
+    const el = document.documentElement;
+    const brand = shadeScale(isValidHex(db?.settings.brandColor ?? "") ? db!.settings.brandColor : "#17a58c");
+    const accent = shadeScale(isValidHex(db?.settings.accentColor ?? "") ? db!.settings.accentColor : "#e8a33d");
+    for (const [k, v] of Object.entries(brand)) el.style.setProperty(`--color-brand-${k}`, v);
+    for (const [k, v] of Object.entries(accent)) el.style.setProperty(`--color-accent-${k}`, v);
+  }, [db?.settings.brandColor, db?.settings.accentColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toast = useCallback((msg: string, tone: Toast["tone"] = "ok") => {
     const id = uid();

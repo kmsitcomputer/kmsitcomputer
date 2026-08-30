@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Globe, Search, Languages, Users, Shield, Terminal, Activity, Youtube, Video, CalendarCheck,
   Save, AlertTriangle, Plus, Pencil, Trash2, Ban, Lock, Unlock, Database, HardDrive,
+  Palette, ImagePlus, MapPin, Upload, RotateCcw,
 } from "lucide-react";
 import { useApp } from "../lib/store";
-import { fmtDate, fmtDateTime, PERMISSIONS, uid, type Role, type User } from "../lib/db";
-import { Avatar, Badge, Btn, cx, Field, Modal, SearchInput, Select, statusTone, TextInput, Toggle } from "../components/ui";
+import { fmtDate, fmtDateTime, isValidHex, PERMISSIONS, shadeScale, uid, type Role, type User } from "../lib/db";
+import { Avatar, Badge, Btn, cx, Field, Logo, Modal, SearchInput, Select, statusTone, TextInput, Toggle } from "../components/ui";
 import { DashHead } from "./dash-content";
 import { LANGS } from "../lib/i18n";
 
@@ -23,6 +24,89 @@ function SettingsCard({ title, desc, children, onSave }: { title: string; desc?:
 }
 
 // ─── Website settings ───────────────────────────────────────────────────────
+const BRAND_PRESETS = [
+  { name: "Teal KMSIT", brand: "#17a58c", accent: "#e8a33d" },
+  { name: "Samudra", brand: "#0c7489", accent: "#e2b33c" },
+  { name: "Hutan", brand: "#2f7d4f", accent: "#d9a03f" },
+  { name: "Nila", brand: "#33518e", accent: "#e0a83e" },
+  { name: "Batu Merah", brand: "#a8432f", accent: "#3e8fc4" },
+  { name: "Anggur", brand: "#7a3e8f", accent: "#e8a33d" },
+];
+
+function ImagePicker({ label, value, onChange, hint, max = 320 }: { label: string; value: string; onChange: (v: string) => void; hint?: string; max?: number }) {
+  const { toast } = useApp();
+  const ref = useRef<HTMLInputElement>(null);
+  const onFile = (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast("File harus berupa gambar (MIME validation).", "bad"); return; }
+    if (file.size > 2 * 1024 * 1024) { toast("Ukuran maksimal 2MB.", "bad"); return; }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(img.width * scale)); c.height = Math.max(1, Math.round(img.height * scale));
+      c.getContext("2d")?.drawImage(img, 0, 0, c.width, c.height);
+      onChange(c.toDataURL(file.type === "image/png" ? "image/png" : "image/jpeg", 0.92));
+      URL.revokeObjectURL(url);
+      toast("Gambar dimuat — klik Simpan untuk menerapkan", "info");
+    };
+    img.onerror = () => toast("Gagal membaca file gambar.", "bad");
+    img.src = url;
+  };
+  const isData = value.startsWith("data:");
+  return (
+    <Field label={label} hint={hint}>
+      <div className="flex items-center gap-3.5">
+        <div className="w-14 h-14 rounded-xl border border-ink-200 dark:border-ink-700 overflow-hidden flex items-center justify-center shrink-0"
+          style={{ backgroundImage: "repeating-conic-gradient(#e5e7eb 0% 25%, #f9fafb 0% 50%)", backgroundSize: "12px 12px" }}>
+          {value ? <img src={value} alt={label} className="w-full h-full object-contain" /> : <ImagePlus size={18} className="text-ink-300" />}
+        </div>
+        <div className="grow space-y-2 min-w-0">
+          <TextInput value={isData ? "file ter-upload (tersimpan di database)" : value} readOnly={isData}
+            onChange={(e) => onChange(e.target.value)} placeholder="https://…/logo.png" className={cx("font-mono text-[12.5px]", isData && "opacity-70")} />
+          <div className="flex gap-2">
+            <input ref={ref} type="file" accept="image/*" className="hidden" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = ""; }} />
+            <Btn size="xs" variant="outline" onClick={() => ref.current?.click()}><Upload size={12} />Upload</Btn>
+            {value && <Btn size="xs" variant="ghost" onClick={() => onChange("")}><RotateCcw size={12} />Reset</Btn>}
+          </div>
+        </div>
+      </div>
+    </Field>
+  );
+}
+
+function ColorField({ label, desc, value, onChange }: { label: string; desc?: string; value: string; onChange: (v: string) => void }) {
+  const [hex, setHex] = useState(value);
+  useEffect(() => setHex(value), [value]);
+  const valid = isValidHex(value);
+  const scale = shadeScale(valid ? value : "#17a58c");
+  const commit = () => {
+    const v = hex.trim().startsWith("#") ? hex.trim() : `#${hex.trim()}`;
+    if (isValidHex(v)) onChange(v.toLowerCase());
+    else setHex(value);
+  };
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <div><p className="text-[13px] font-bold text-ink-700 dark:text-ink-100">{label}</p>{desc && <p className="text-[11.5px] text-ink-400">{desc}</p>}</div>
+        <div className="flex items-center gap-2">
+          <label className="relative w-9 h-9 rounded-lg border border-ink-200 dark:border-ink-700 overflow-hidden cursor-pointer shadow-sm" style={{ background: value }} title="Pilih warna">
+            <input type="color" value={valid && value.length === 7 ? value : "#17a58c"} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer" />
+          </label>
+          <TextInput value={hex} onChange={(e) => setHex(e.target.value)} onBlur={commit} onKeyDown={(e) => e.key === "Enter" && commit()}
+            className="w-28 font-mono text-[12.5px] h-9" placeholder="#17a58c" />
+        </div>
+      </div>
+      <div className="mt-2.5 flex rounded-lg overflow-hidden border border-ink-200/60 dark:border-ink-700/60 h-6">
+        {["50", "100", "200", "300", "400", "500", "600", "700", "800", "900"].map((k) => (
+          <span key={k} className="grow transition-colors duration-300" style={{ background: scale[k] }} title={`${label} ${k}: ${scale[k]}`} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function WebsiteSettings() {
   const { db, update, toast, log } = useApp();
   const [f, setF] = useState(() => ({ ...(db?.settings ?? {} as NonNullable<typeof db>["settings"]) }));
@@ -30,12 +114,48 @@ export function WebsiteSettings() {
   const save = () => {
     update((d) => { d.settings = { ...d.settings, ...f }; });
     log("settings_changed", "Pengaturan website diperbarui");
-    toast("Pengaturan website disimpan", "ok");
+    toast("Pengaturan website disimpan — identitas diterapkan ke seluruh situs", "ok");
   };
   const s = (k: string, v: unknown) => setF((p) => ({ ...p, [k]: v }));
   return (
     <div className="space-y-5 max-w-3xl">
       <DashHead title="Pengaturan Website" desc="Identitas & konfigurasi inti — tersimpan di database (tabel settings)" />
+
+      <SettingsCard title="Identitas Visual" desc="Logo, favicon (icon tab), dan warna tema website — live di seluruh situs" onSave={save}>
+        <div className="grid sm:grid-cols-2 gap-5">
+          <ImagePicker label="Logo website" hint="PNG/JPG/SVG, maks 2MB. Kosongkan untuk logo default." value={f.logoUrl} onChange={(v) => s("logoUrl", v)} />
+          <ImagePicker label="Favicon (icon browser)" hint="Tampil di tab browser & bookmark." max={96} value={f.faviconUrl} onChange={(v) => s("faviconUrl", v)} />
+        </div>
+        <div className="mt-5 grid gap-5 rounded-xl border border-ink-100 dark:border-ink-800 p-4">
+          <ColorField label="Warna utama (brand)" desc="Tombol, link, aksen navigasi, highlight" value={f.brandColor} onChange={(v) => s("brandColor", v)} />
+          <ColorField label="Warna aksen" desc="Badge, harga, CTA sekunder" value={f.accentColor} onChange={(v) => s("accentColor", v)} />
+          <div>
+            <p className="text-[13px] font-bold text-ink-700 dark:text-ink-100 mb-2">Preset identitas</p>
+            <div className="flex flex-wrap gap-2">
+              {BRAND_PRESETS.map((p) => (
+                <button key={p.name} onClick={() => { s("brandColor", p.brand); s("accentColor", p.accent); toast(`Preset “${p.name}” diterapkan — klik Simpan`, "info"); }}
+                  className={cx("flex items-center gap-2 rounded-lg border px-3 py-2 text-[12px] font-bold transition-all hover:-translate-y-0.5",
+                    f.brandColor === p.brand && f.accentColor === p.accent ? "border-brand-500 bg-brand-50 dark:bg-brand-900/25 text-brand-700 dark:text-brand-300" : "border-ink-200 dark:border-ink-700 text-ink-600 dark:text-ink-200")}>
+                  <span className="flex -space-x-1"><span className="w-4 h-4 rounded-full ring-2 ring-card dark:ring-ink-900" style={{ background: p.brand }} /><span className="w-4 h-4 rounded-full ring-2 ring-card dark:ring-ink-900" style={{ background: p.accent }} /></span>
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 rounded-xl overflow-hidden border border-ink-800 bg-ink-900 text-white scanline relative">
+          <div className="absolute inset-0 grid-bg opacity-40 pointer-events-none" />
+          <div className="relative px-5 py-4 flex flex-wrap items-center gap-4">
+            <Logo name={f.siteName || "Website"} dark logoUrl={f.logoUrl || undefined} />
+            <span className="text-[12px] text-ink-300 italic hidden sm:block">“{f.slogan}”</span>
+            <div className="grow" />
+            <span className="px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide" style={{ background: `${f.accentColor}26`, color: f.accentColor }}>Aksen</span>
+            <span className="px-3.5 h-9 inline-flex items-center rounded-lg text-[13px] font-bold text-white shadow-sm transition-transform hover:scale-[1.03]" style={{ background: f.brandColor }}>Tombol Utama</span>
+          </div>
+          <p className="relative px-5 pb-3 text-[10.5px] font-mono text-ink-400">pratinjau langsung · perubahan warna diterapkan real-time setelah Simpan</p>
+        </div>
+      </SettingsCard>
+
       <SettingsCard title="Identitas" desc="Nama, slogan, dan deskripsi website" onSave={save}>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Nama Website"><TextInput value={f.siteName} onChange={(e) => s("siteName", e.target.value)} /></Field>
@@ -43,6 +163,21 @@ export function WebsiteSettings() {
           <Field label="Deskripsi" className="sm:col-span-2"><TextInput value={f.description} onChange={(e) => s("description", e.target.value)} /></Field>
         </div>
       </SettingsCard>
+
+      <SettingsCard title="Titik Google Maps" desc="Lokasi yang tampil di footer & halaman Tentang Kami" onSave={save}>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <Field label="Latitude"><TextInput value={f.mapLat} onChange={(e) => s("mapLat", e.target.value)} placeholder="-6.2614927" className="font-mono" /></Field>
+          <Field label="Longitude"><TextInput value={f.mapLng} onChange={(e) => s("mapLng", e.target.value)} placeholder="106.8106253" className="font-mono" /></Field>
+          <Field label="Label lokasi"><TextInput value={f.mapLabel} onChange={(e) => s("mapLabel", e.target.value)} placeholder="Kampus Utama" /></Field>
+        </div>
+        <div className="mt-4 rounded-xl overflow-hidden border border-ink-200 dark:border-ink-700" style={{ height: 190 }}>
+          <iframe title="Pratinjau peta" loading="lazy"
+            src={`https://maps.google.com/maps?q=${f.mapLat || "-6.2614927"},${f.mapLng || "106.8106253"}&z=15&output=embed`}
+            className="w-full h-full border-0" />
+        </div>
+        <p className="mt-2 text-[11.5px] text-ink-400">Buka Google Maps → klik kanan lokasi → salin koordinat (lat,lng) → tempel di atas.</p>
+      </SettingsCard>
+
       <SettingsCard title="Kontak" onSave={save}>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Email"><TextInput value={f.email} onChange={(e) => s("email", e.target.value)} /></Field>

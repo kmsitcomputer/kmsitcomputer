@@ -21,6 +21,7 @@ export interface Settings {
   whatsapp: string; address: string; timezone: string; language: Lang; currency: string;
   maintenanceMode: boolean; registrationOpen: boolean; footerText: string;
   logoUrl: string; faviconUrl: string; mapLat: string; mapLng: string; mapLabel: string;
+  brandColor: string; accentColor: string;
   social: { instagram: string; youtube: string; facebook: string; github: string };
   seo: SeoMeta;
 }
@@ -132,6 +133,35 @@ export interface DB {
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 export const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+
+// ─── tema warna runtime ─────────────────────────────────────────────────────
+export function hexToHsl(hex: string): [number, number, number] {
+  const m = hex.replace("#", "");
+  const n = parseInt(m.length === 3 ? m.split("").map((c) => c + c).join("") : m, 16);
+  const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0; const l = (max + min) / 2;
+  const d = max - min;
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  if (d !== 0) {
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h = Math.round(h * 60); if (h < 0) h += 360;
+  }
+  return [h, Math.round(s * 100), Math.round(l * 100)];
+}
+export function isValidHex(v: string) { return /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v); }
+/** Mengubah satu warna menjadi skala 50–950 (warna input ≈ 500). */
+export function shadeScale(hex: string): Record<string, string> {
+  const [h, s, l] = hexToHsl(hex);
+  const cl = (x: number) => Math.max(3, Math.min(97, x));
+  const st = (ll: number, ss = s) => `hsl(${h} ${Math.round(Math.max(18, Math.min(96, ss)))}% ${cl(ll)}%)`;
+  return {
+    50: st(l + 54, s * 0.5 + 30), 100: st(l + 45, s * 0.65 + 20), 200: st(l + 34), 300: st(l + 20), 400: st(l + 9),
+    500: st(l), 600: st(l - 8), 700: st(l - 14), 800: st(l - 20), 900: st(l - 26), 950: st(l - 34, s * 0.8),
+  };
+}
 export const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 export const fmtIDR = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
 export const fmtNum = (n: number) => new Intl.NumberFormat("id-ID").format(n);
@@ -425,6 +455,7 @@ export function buildSeedDB(superAdmin: { name: string; email: string; password:
       email: "halo@kmsit.id", phone: "(021) 555-0199", whatsapp: "6281234567890",
       address: "Jl. Pendidikan Teknologi No. 12, Jakarta Selatan", timezone: "Asia/Jakarta",
       logoUrl: "", faviconUrl: "", mapLat: "-6.2614927", mapLng: "106.8106253", mapLabel: "KMSIT Computer — Kampus Utama",
+      brandColor: "#17a58c", accentColor: "#e8a33d",
       language: "id", currency: "IDR", maintenanceMode: false, registrationOpen: true,
       footerText: "© 2025 KMSIT Computer. Seluruh hak cipta dilindungi.",
       social: { instagram: "https://instagram.com/kmsit", youtube: "https://youtube.com/@kmsit", facebook: "https://facebook.com/kmsit", github: "https://github.com/kmsit" },
@@ -466,12 +497,22 @@ const DB_KEY = "kmsit_db_v1";
 const SESSION_KEY = "kmsit_session_v1";
 export const LOCK_KEY = "kmsit_installed_lock";
 
+const SETTINGS_DEFAULTS: Record<string, unknown> = {
+  logoUrl: "", faviconUrl: "", brandColor: "#17a58c", accentColor: "#e8a33d",
+  mapLat: "-6.2614927", mapLng: "106.8106253", mapLabel: "",
+};
 export function loadDB(): DB | null {
   try {
     const raw = localStorage.getItem(DB_KEY);
     if (!raw) return null;
     const db = JSON.parse(raw) as DB;
-    return db.version === 2 ? db : null;
+    if (!db || typeof db.version !== "number" || db.version < 1) return null;
+    // Migrasi ringan: isi field baru dengan default agar install lama tetap jalan
+    db.settings = { ...SETTINGS_DEFAULTS, ...db.settings } as DB["settings"];
+    if (!db.orgUnits) db.orgUnits = [];
+    if (!db.orgMembers) db.orgMembers = [];
+    db.version = 2;
+    return db;
   } catch { return null; }
 }
 export function saveDB(db: DB) { try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch { /* storage full */ } }

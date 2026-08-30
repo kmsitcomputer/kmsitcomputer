@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, Newspaper, BookOpen, FileStack, FolderOpen, GraduationCap, HelpCircle,
   Users, UserCog, Award, Briefcase, Home, Info, Menu as MenuIcon, Wallet, CreditCard, ArrowLeftRight,
   Banknote, Youtube, Video, CalendarCheck, Landmark, Globe, Settings, Search as SearchIcon, Bell,
-  LogOut, Moon, Sun, ChevronDown, ChevronRight, X, Shield, Languages, Activity, Terminal, PanelLeft,
+  LogOut, Moon, Sun, ChevronDown, ChevronRight, X, Shield, Languages, Activity, Terminal, PanelLeft, Network,
 } from "lucide-react";
 import { useApp } from "../lib/store";
 import { ago, type MenuItem, type Role } from "../lib/db";
@@ -220,6 +220,7 @@ export function dashMenu(role: Role): DashGroup[] {
     g("dash.cms", [
       { to: "home-cms", labelKey: "dash.home", icon: <Home size={17} /> },
       { to: "about-cms", labelKey: "dash.about", icon: <Info size={17} /> },
+      { to: "org-cms", labelKey: "dash.org", icon: <Network size={17} /> },
       { to: "menus", labelKey: "dash.menus", icon: <MenuIcon size={17} /> },
     ]),
     g("dash.transactions", [
@@ -263,6 +264,7 @@ export function dashMenu(role: Role): DashGroup[] {
     g("dash.cms", [
       { to: "home-cms", labelKey: "dash.home", icon: <Home size={17} /> },
       { to: "about-cms", labelKey: "dash.about", icon: <Info size={17} /> },
+      { to: "org-cms", labelKey: "dash.org", icon: <Network size={17} /> },
     ]),
     g("dash.transactions", [
       { to: "payments", labelKey: "dash.payments", icon: <CreditCard size={17} /> },
