@@ -78,7 +78,7 @@ export function PublicShell({ children }: { children?: React.ReactNode }) {
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-40 border-b border-ink-100 dark:border-ink-800 bg-paper/85 dark:bg-ink-950/85 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-2">
-          <Link to="/"><Logo name={db.settings.siteName} /></Link>
+          <Link to="/"><Logo name={db.settings.siteName} logoUrl={db.settings.logoUrl || undefined} /></Link>
           <nav className="hidden lg:flex items-center gap-0.5 ml-6">
             {headerMenu?.items.map((it) => <NavItem key={it.id} item={it} />)}
           </nav>
@@ -122,7 +122,7 @@ export function PublicShell({ children }: { children?: React.ReactNode }) {
           <div className="absolute inset-0 bg-ink-950/60" onClick={() => setMobile(false)} />
           <div className="drawer-in absolute right-0 top-0 h-full w-72 bg-card dark:bg-ink-900 border-l border-ink-100 dark:border-ink-800 p-4 overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <Logo name={db.settings.siteName} />
+              <Logo name={db.settings.siteName} logoUrl={db.settings.logoUrl || undefined} />
               <button onClick={() => setMobile(false)} className="p-2 text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800 rounded-lg"><X size={18} /></button>
             </div>
             {headerMenu?.items.map((it) => (
@@ -148,7 +148,7 @@ export function PublicShell({ children }: { children?: React.ReactNode }) {
         <div className="absolute inset-0 grid-bg opacity-30 pointer-events-none" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-14 grid gap-10 md:grid-cols-[1.4fr_1fr_1.2fr_1fr]">
           <div>
-            <Logo name={db.settings.siteName} dark />
+            <Logo name={db.settings.siteName} dark logoUrl={db.settings.logoUrl || undefined} />
             <p className="mt-4 text-sm text-ink-300 leading-relaxed max-w-xs">{db.settings.description}</p>
             <div className="flex gap-2 mt-5">
               {Object.entries(db.settings.social).map(([k, v]) => (
@@ -161,10 +161,17 @@ export function PublicShell({ children }: { children?: React.ReactNode }) {
             {footerMenu?.items.map((it) => <SmartLink key={it.id} to={it.url} className="block py-1.5 text-sm text-ink-300 hover:text-brand-300 transition-colors">{it.label}</SmartLink>)}
           </div>
           <div>
-            <p className="font-display font-semibold text-white mb-4">Kontak</p>
-            <p className="text-sm text-ink-300 leading-relaxed">{db.settings.address}</p>
-            <p className="text-sm text-ink-300 mt-2">{db.settings.email}</p>
-            <p className="text-sm text-ink-300 mt-1">{db.settings.phone}</p>
+            <p className="font-display font-semibold text-white mb-4">Kontak & Lokasi</p>
+            <div className="rounded-xl overflow-hidden border border-ink-700 mb-3" style={{ height: 120 }}>
+              <iframe title={db.settings.mapLabel || "Lokasi kami"} loading="lazy"
+                src={`https://maps.google.com/maps?q=${db.settings.mapLat},${db.settings.mapLng}&z=15&output=embed`}
+                className="w-full h-full border-0 grayscale-[35%] contrast-[1.05]" />
+            </div>
+            <p className="text-[13px] text-ink-300 leading-relaxed">{db.settings.address}</p>
+            <a href={`https://www.google.com/maps?q=${db.settings.mapLat},${db.settings.mapLng}`} target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-1 mt-1.5 text-[12px] font-bold text-brand-300 hover:text-brand-200">Buka di Google Maps →</a>
+            <p className="text-[13px] text-ink-300 mt-2">{db.settings.email}</p>
+            <p className="text-[13px] text-ink-300 mt-0.5">{db.settings.phone}</p>
           </div>
           <div>
             <p className="font-display font-semibold text-white mb-4">Platform</p>
@@ -309,7 +316,7 @@ export function DashShell({ children }: { children?: React.ReactNode }) {
   const sidebar = (
     <div className="flex flex-col h-full">
       <div className="h-16 flex items-center px-5 border-b border-white/5 shrink-0">
-        <Link to="/"><Logo name={db.settings.siteName} dark /></Link>
+        <Link to="/"><Logo name={db.settings.siteName} dark logoUrl={db.settings.logoUrl || undefined} /></Link>
       </div>
       <div className="grow overflow-y-auto px-3 py-4">
         {groups.map((g, gi) => (

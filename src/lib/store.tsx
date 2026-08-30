@@ -18,6 +18,7 @@ interface Store {
   update: (fn: (d: DB) => void) => void;
   login: (email: string, pw: string) => string | null;
   register: (name: string, email: string, pw: string) => string | null;
+  googleSignIn: (name: string, email: string) => string | null;
   logout: () => void;
   toast: (msg: string, tone?: Toast["tone"]) => void;
   dismissToast: (id: string) => void;
@@ -50,10 +51,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.lang = lang;
   }, [lang]);
   useEffect(() => {
-    if (db && !document.title.startsWith(db.settings.siteName)) {
-      document.title = `${db.settings.siteName} — LMS & CMS Platform`;
-    }
-  }, [db]);
+    if (!db) return;
+    document.title = db.settings.seo.title || `${db.settings.siteName} — LMS & CMS Platform`;
+    const link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+    if (link && db.settings.faviconUrl) link.href = db.settings.faviconUrl;
+    else if (link) link.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230C1412'/%3E%3Cpath d='M9 11l5 5-5 5' stroke='%232CC5B0' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16.5 21h7' stroke='%23E8A33D' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E";
+  }, [db?.settings.siteName, db?.settings.seo.title, db?.settings.faviconUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toast = useCallback((msg: string, tone: Toast["tone"] = "ok") => {
     const id = uid();
@@ -102,6 +105,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return null;
   }, [db, update, toast]);
 
+  const googleSignIn = useCallback((name: string, email: string): string | null => {
+    // Alur OAuth Google: di produksi tukar dengan redirect OAuth + token verification di backend.
+    // Role donatur tidak ada di platform — akun Google publik dipetakan ke role Siswa.
+    if (!db) return "not-installed";
+    const clean = email.trim().toLowerCase();
+    const existing = db.users.find((x) => x.email.toLowerCase() === clean);
+    if (existing) {
+      if (existing.status === "suspended") return "Akun ditangguhkan. Hubungi administrator.";
+      saveSession(existing.id); setSessionId(existing.id);
+      toast(`Selamat datang kembali, ${existing.name.split(" ")[0]}!`, "ok");
+      return null;
+    }
+    if (!db.settings.registrationOpen) return "Pendaftaran sedang ditutup oleh administrator.";
+    const nu: User = {
+      id: uid(), name: name.trim() || clean.split("@")[0], email: clean, password: `gauth:${uid()}`,
+      role: "student", color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+      joined: new Date().toISOString(), status: "active",
+    };
+    update((d) => {
+      d.users.push(nu);
+      d.logs.unshift({ id: uid(), userId: nu.id, userName: nu.name, action: "user_created", detail: `Akun siswa “${nu.name}” dibuat via Google`, date: new Date().toISOString() });
+    });
+    saveSession(nu.id); setSessionId(nu.id);
+    toast("Login Google berhasil. Selamat belajar!", "ok");
+    return null;
+  }, [db, update, toast]);
+
   const logout = useCallback(() => {
     saveSession(null); setSessionId(null);
     toast(translate(lang, "toast.logout"), "info");
@@ -138,7 +168,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const value: Store = {
     db, user, theme, lang, toasts,
     setTheme: setThemeState, setLang: setLangState,
-    update, login, register, logout, toast, dismissToast, t, can, notify, log, install, reset,
+    update, login, register, googleSignIn, logout, toast, dismissToast, t, can, notify, log, install, reset,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

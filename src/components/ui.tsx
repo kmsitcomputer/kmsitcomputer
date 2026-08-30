@@ -266,14 +266,18 @@ export function Reveal({ children, className, delay = 0 }: { children: React.Rea
 }
 
 // ─── Brand ──────────────────────────────────────────────────────────────────
-export function Logo({ name, dark }: { name: string; dark?: boolean }) {
+export function Logo({ name, dark, logoUrl }: { name: string; dark?: boolean; logoUrl?: string }) {
   return (
     <span className="inline-flex items-center gap-2.5">
-      <svg width="30" height="30" viewBox="0 0 32 32" className="shrink-0">
-        <rect width="32" height="32" rx="7" className={dark ? "fill-brand-400" : "fill-ink-900"} />
-        <path d="M9 11l5 5-5 5" stroke={dark ? "#0a1210" : "#2CC5B0"} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        <path d="M16.5 21h7" stroke={dark ? "#0a1210" : "#E8A33D"} strokeWidth="2.6" strokeLinecap="round" />
-      </svg>
+      {logoUrl ? (
+        <img src={logoUrl} alt={name} className="w-[30px] h-[30px] rounded-[7px] object-cover shrink-0 ring-1 ring-ink-200 dark:ring-ink-700" />
+      ) : (
+        <svg width="30" height="30" viewBox="0 0 32 32" className="shrink-0">
+          <rect width="32" height="32" rx="7" className={dark ? "fill-brand-400" : "fill-ink-900"} />
+          <path d="M9 11l5 5-5 5" stroke={dark ? "#0a1210" : "#2CC5B0"} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          <path d="M16.5 21h7" stroke={dark ? "#0a1210" : "#E8A33D"} strokeWidth="2.6" strokeLinecap="round" />
+        </svg>
+      )}
       <span className={cx("font-display font-bold text-[17px] leading-none tracking-tight", dark ? "text-white" : "text-ink-900 dark:text-white")}>
         {name}<span className="block text-[10px] font-mono font-medium tracking-[0.22em] uppercase text-brand-600 dark:text-brand-300 mt-0.5">LMS · CMS</span>
       </span>

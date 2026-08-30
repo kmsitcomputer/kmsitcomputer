@@ -20,9 +20,12 @@ export interface Settings {
   siteName: string; slogan: string; description: string; email: string; phone: string;
   whatsapp: string; address: string; timezone: string; language: Lang; currency: string;
   maintenanceMode: boolean; registrationOpen: boolean; footerText: string;
+  logoUrl: string; faviconUrl: string; mapLat: string; mapLng: string; mapLabel: string;
   social: { instagram: string; youtube: string; facebook: string; github: string };
   seo: SeoMeta;
 }
+export interface OrgUnit { id: string; name: string; tagline: string; level: "board" | "division" | "team"; order: number; }
+export interface OrgMember { id: string; unitId: string; name: string; position: string; email?: string; order: number; }
 export type Provider = "tripay" | "xendit" | "stripe";
 export interface PaymentGateway {
   provider: Provider; enabled: boolean; mode: "sandbox" | "production";
@@ -124,6 +127,7 @@ export interface DB {
   programs: Program[]; pages: Page[]; homeSections: HomeSection[]; menus: Menu[];
   media: MediaItem[]; payments: Payment[]; walletTx: WalletTx[]; withdrawals: Withdrawal[];
   notifications: Notice[]; logs: ActivityLog[]; testimonials: Testimonial[];
+  orgUnits: OrgUnit[]; orgMembers: OrgMember[];
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -165,16 +169,10 @@ const IMG = {
 export { IMG };
 
 export function buildSeedDB(superAdmin: { name: string; email: string; password: string }): DB {
-  const uSuper: User = { id: "u-super", name: superAdmin.name, email: superAdmin.email, password: superAdmin.password, role: "super_admin", color: "#0e8a75", joined: daysAgo(420), status: "active" };
-  const uAdmin: User = { id: "u-admin", name: "Sari Wulandari", email: "admin@kmsit.id", password: "admin123", role: "admin", color: "#3e8fc4", joined: daysAgo(380), status: "active" };
-  const uIns1: User = { id: "u-ins1", name: "Rizky Ramadhan", email: "instruktur@kmsit.id", password: "guru123", role: "instructor", color: "#dd8f22", joined: daysAgo(350), status: "active", bio: "Software engineer 8 tahun. Fokus web development & data.", bank: "BCA", account: "8830-2211-90" };
-  const uIns2: User = { id: "u-ins2", name: "Bagas Pratama", email: "bagas@kmsit.id", password: "guru123", role: "instructor", color: "#8a5cc0", joined: daysAgo(300), status: "active", bio: "Network engineer bersertifikat MTCNA & CCNA.", bank: "Mandiri", account: "1370-0099-21" };
-  const uIns3: User = { id: "u-ins3", name: "Nadia Fitriani", email: "nadia@kmsit.id", password: "guru123", role: "instructor", color: "#c04f7e", joined: daysAgo(210), status: "active", bio: "Product designer, ex-startup. Mentor UI/UX.", bank: "BNI", account: "0912-7745-33" };
-  const uStu1: User = { id: "u-stu1", name: "Dina Ayu Lestari", email: "siswa@kmsit.id", password: "siswa123", role: "student", color: "#2f9e63", joined: daysAgo(120), status: "active" };
-  const uStu2: User = { id: "u-stu2", name: "Fajar Nugroho", email: "fajar@mail.com", password: "siswa123", role: "student", color: "#b57708", joined: daysAgo(90), status: "active" };
-  const uStu3: User = { id: "u-stu3", name: "Putri Maharani", email: "putri@mail.com", password: "siswa123", role: "student", color: "#2f749f", joined: daysAgo(60), status: "active" };
-  const uStu4: User = { id: "u-stu4", name: "Yoga Saputra", email: "yoga@mail.com", password: "siswa123", role: "student", color: "#b53943", joined: daysAgo(30), status: "active" };
-  const users = [uSuper, uAdmin, uIns1, uIns2, uIns3, uStu1, uStu2, uStu3, uStu4];
+  // PRODUCTION: hanya Super Admin yang dibuat saat instalasi.
+  // Admin / Instruktur / Siswa lain dibuat manual oleh Super Admin atau lewat registrasi publik.
+  const uSuper: User = { id: "u-super", name: superAdmin.name, email: superAdmin.email, password: superAdmin.password, role: "super_admin", color: "#0e8a75", joined: new Date().toISOString(), status: "active" };
+  const users = [uSuper];
 
   const cat = (id: string, name: string, color: string): Category => ({ id, name, slug: slugify(name), color });
 
@@ -186,7 +184,7 @@ export function buildSeedDB(superAdmin: { name: string; email: string; password:
       id: cWeb, slug: "fullstack-web-development-bootcamp", title: "Full-Stack Web Development Bootcamp",
       description: "Kuasai HTML, CSS, JavaScript, React, dan Node.js dari nol sampai deploy aplikasi production.",
       longDescription: "<p>Bootcamp intensif yang membawa kamu dari nol hingga mampu membangun aplikasi web full-stack. Kurikulum disusun berdasarkan kebutuhan industri: fundamental web, JavaScript modern, React, REST API dengan Node.js, database MySQL, hingga deployment.</p><h3>Yang akan kamu kuasai</h3><ul><li>Fundamental HTML, CSS, dan JavaScript ES2023</li><li>React + React Router dan manajemen state</li><li>REST API, autentikasi, dan keamanan dasar</li><li>MySQL, migrasi, dan optimasi query</li><li>Git workflow dan deployment ke production</li></ul><blockquote>Kelas ini dilengkapi quiz di tiap modul, sertifikat digital, dan sesi live via Zoom setiap Sabtu.</blockquote>",
-      thumbnail: IMG.web, categoryId: "cc-web", instructorId: "u-ins1", price: 450000, level: "Pemula",
+      thumbnail: IMG.web, categoryId: "cc-web", instructorId: "u-super", price: 450000, level: "Pemula",
       status: "published", rating: 4.8, tags: ["html", "css", "javascript", "react"], certificateEnabled: true, createdAt: daysAgo(200),
       modules: [
         { id: "m-w1", title: "Fundamental Web", lessons: [
@@ -211,7 +209,7 @@ export function buildSeedDB(superAdmin: { name: string; email: string; password:
       id: cNet, slug: "jaringan-komputer-mikrotik", title: "Jaringan Komputer & Mikrotik Dasar",
       description: "Fundamental jaringan, subnetting, routing, dan konfigurasi Mikrotik untuk persiapan MTCNA.",
       longDescription: "<p>Kelas jaringan komputer terstruktur: dari OSI layer, IP addressing, subnetting, VLAN, routing statis & dinamis, hingga hands-on konfigurasi Mikrotik RouterOS. Cocok untuk persiapan sertifikasi MTCNA.</p><ul><li>Simulasi packet tracer di setiap modul</li><li>Lab virtual Mikrotik (CHR) gratis</li><li>Live session troubleshooting via Zoom</li></ul>",
-      thumbnail: IMG.net, categoryId: "cc-net", instructorId: "u-ins2", price: 275000, level: "Menengah",
+      thumbnail: IMG.net, categoryId: "cc-net", instructorId: "u-super", price: 275000, level: "Menengah",
       status: "published", rating: 4.7, tags: ["network", "mikrotik", "mtcna"], certificateEnabled: true, createdAt: daysAgo(150),
       modules: [
         { id: "m-n1", title: "Fundamental Jaringan", lessons: [
@@ -230,7 +228,7 @@ export function buildSeedDB(superAdmin: { name: string; email: string; password:
       id: cData, slug: "data-science-python", title: "Data Science dengan Python",
       description: "Pandas, visualisasi data, statistik praktis, dan machine learning dasar dengan studi kasus nyata.",
       longDescription: "<p>Mulai dari Python dasar, manipulasi data dengan Pandas, visualisasi dengan Matplotlib, statistik deskriptif, hingga pengenalan scikit-learn. Semua materi menggunakan dataset riil UMKM Indonesia.</p><ul><li>20+ notebook latihan</li><li>Project akhir: analisis data penjualan</li><li>Sertifikat digital terverifikasi</li></ul>",
-      thumbnail: IMG.data, categoryId: "cc-data", instructorId: "u-ins1", price: 350000, level: "Menengah",
+      thumbnail: IMG.data, categoryId: "cc-data", instructorId: "u-super", price: 350000, level: "Menengah",
       status: "published", rating: 4.9, tags: ["python", "pandas", "ml"], certificateEnabled: true, createdAt: daysAgo(90),
       modules: [
         { id: "m-d1", title: "Python & Pandas", lessons: [
@@ -248,7 +246,7 @@ export function buildSeedDB(superAdmin: { name: string; email: string; password:
       id: cUi, slug: "uiux-design-figma", title: "UI/UX Design dengan Figma",
       description: "Design thinking, wireframing, design system, dan prototyping — gratis untuk semua member.",
       longDescription: "<p>Kelas gratis pengantar UI/UX: design thinking, riset pengguna ringan, wireframe, design system sederhana, dan prototyping interaktif di Figma.</p><ul><li>Template Figma gratis</li><li>Review portofolio di sesi live Google Meet</li></ul>",
-      thumbnail: IMG.uiux, categoryId: "cc-design", instructorId: "u-ins3", price: 0, level: "Pemula",
+      thumbnail: IMG.uiux, categoryId: "cc-design", instructorId: "u-super", price: 0, level: "Pemula",
       status: "published", rating: 4.6, tags: ["figma", "uiux", "design"], certificateEnabled: false, createdAt: daysAgo(45),
       modules: [
         { id: "m-u1", title: "Dasar UI/UX", lessons: [
@@ -291,73 +289,46 @@ export function buildSeedDB(superAdmin: { name: string; email: string; password:
     },
   ];
 
-  const enrollments: Enrollment[] = [
-    { id: "e1", courseId: cNet, studentId: "u-stu1", date: daysAgo(20), completedLessons: ["l-n1", "l-n2", "l-n3", "l-n4"], status: "active" },
-    { id: "e2", courseId: cUi, studentId: "u-stu1", date: daysAgo(10), completedLessons: ["l-u1", "l-u2", "l-u3"], status: "completed" },
-    { id: "e3", courseId: cWeb, studentId: "u-stu2", date: daysAgo(15), completedLessons: ["l-w1", "l-w2"], status: "active" },
-    { id: "e4", courseId: cData, studentId: "u-stu3", date: daysAgo(8), completedLessons: ["l-d1"], status: "active" },
-    { id: "e5", courseId: cWeb, studentId: "u-stu4", date: daysAgo(5), completedLessons: [], status: "active" },
-  ];
-  const attempts: QuizAttempt[] = [
-    { id: "a1", quizId: qzNet, courseId: cNet, studentId: "u-stu1", score: 100, total: 100, percent: 100, passed: true, date: daysAgo(12) },
-    { id: "a2", quizId: qzHtml, courseId: cWeb, studentId: "u-stu2", score: 65, total: 100, percent: 65, passed: false, date: daysAgo(9) },
-    { id: "a3", quizId: qzPy, courseId: cData, studentId: "u-stu3", score: 75, total: 100, percent: 75, passed: true, date: daysAgo(4) },
-  ];
-  const certificates: Certificate[] = [
-    { id: "ct1", code: "KMSIT-2025-8F42K1", studentId: "u-stu1", courseId: cUi, instructorName: "Nadia Fitriani", issuedAt: daysAgo(9), template: "modern" },
-  ];
-
-  const payments: Payment[] = [
-    { id: "p1", invoice: "INV-2025-0117", studentId: "u-stu1", courseId: cNet, provider: "tripay", mode: "sandbox", method: "QRIS", amount: 275000, fee: 4500, status: "paid", date: daysAgo(20) },
-    { id: "p2", invoice: "INV-2025-0142", studentId: "u-stu2", courseId: cWeb, provider: "xendit", mode: "sandbox", method: "Virtual Account BCA", amount: 450000, fee: 5000, status: "paid", date: daysAgo(15) },
-    { id: "p3", invoice: "INV-2025-0168", studentId: "u-stu3", courseId: cData, provider: "tripay", mode: "sandbox", method: "QRIS", amount: 350000, fee: 4500, status: "paid", date: daysAgo(8) },
-    { id: "p4", invoice: "INV-2025-0181", studentId: "u-stu4", courseId: cWeb, provider: "stripe", mode: "sandbox", method: "Kartu Kredit", amount: 450000, fee: 13500, status: "paid", date: daysAgo(5) },
-    { id: "p5", invoice: "INV-2025-0193", studentId: "u-stu3", courseId: cWeb, provider: "tripay", mode: "sandbox", method: "QRIS", amount: 450000, fee: 4500, status: "pending", date: daysAgo(1) },
-  ];
-  const walletTx: WalletTx[] = [
-    { id: "w1", instructorId: "u-ins2", type: "earning", amount: 233750, note: "Jaringan Komputer & Mikrotik Dasar", date: daysAgo(20), paymentId: "p1" },
-    { id: "w2", instructorId: "u-ins1", type: "earning", amount: 382500, note: "Full-Stack Web Development Bootcamp", date: daysAgo(15), paymentId: "p2" },
-    { id: "w3", instructorId: "u-ins1", type: "earning", amount: 297500, note: "Data Science dengan Python", date: daysAgo(8), paymentId: "p3" },
-    { id: "w4", instructorId: "u-ins1", type: "earning", amount: 382500, note: "Full-Stack Web Development Bootcamp", date: daysAgo(5), paymentId: "p4" },
-    { id: "w5", instructorId: "u-ins2", type: "withdrawal", amount: -150000, note: "Pencairan ke BCA •••• 2211", date: daysAgo(6) },
-  ];
-  const withdrawals: Withdrawal[] = [
-    { id: "wd1", instructorId: "u-ins2", amount: 150000, bank: "BCA", account: "8830221190", holder: "Bagas Pratama", status: "completed", date: daysAgo(6) },
-    { id: "wd2", instructorId: "u-ins1", amount: 300000, bank: "BCA", account: "8830221190", holder: "Rizky Ramadhan", status: "pending", date: daysAgo(1) },
-  ];
+  // PRODUCTION: data transaksional dimulai KOSONG — tumbuh dari aktivitas nyata.
+  const enrollments: Enrollment[] = [];
+  const attempts: QuizAttempt[] = [];
+  const certificates: Certificate[] = [];
+  const payments: Payment[] = [];
+  const walletTx: WalletTx[] = [];
+  const withdrawals: Withdrawal[] = [];
 
   const articles: Article[] = [
     {
       id: "ar1", slug: "roadmap-web-developer-2025", title: "Roadmap Web Developer 2025: Dari Nol Sampai Siap Kerja",
       excerpt: "Urutan belajar yang realistis: fundamental, framework, backend, lalu spesialisasi — lengkap dengan estimasi waktu.",
       content: "<p>Banyak pemula gagal bukan karena kurang pintar, tapi karena urutannya acak. Roadmap ini disusun dari pengalaman melatih 700+ siswa KMSIT.</p><h3>Tahap 1 — Fundamental (4–6 minggu)</h3><p>HTML semantik, CSS modern (Flexbox/Grid), dan JavaScript dasar. Jangan sentuh framework dulu.</p><h3>Tahap 2 — JavaScript Lanjut (4 minggu)</h3><p>DOM, async/await, fetch, dan ES modules. Fondasi ini menentukan seberapa cepat kamu menguasai React.</p><h3>Tahap 3 — Framework & Backend (8 minggu)</h3><p>React di frontend, Node.js + MySQL di backend. Bangun satu aplikasi CRUD utuh.</p><blockquote>Konsistensi 2 jam/hari mengalahkan 14 jam di akhir pekan.</blockquote>",
-      hue: 168, categoryId: "ca-web", tags: ["roadmap", "karir", "web"], authorId: "u-ins1", status: "published",
+      hue: 168, categoryId: "ca-web", tags: ["roadmap", "karir", "web"], authorId: "u-super", status: "published",
       publishedAt: daysAgo(6), seoTitle: "Roadmap Web Developer 2025", seoDesc: "Urutan belajar web development yang realistis untuk pemula.", views: 1284,
     },
     {
       id: "ar2", slug: "7-kesalahan-belajar-coding", title: "7 Kesalahan Klasik Saat Belajar Coding (dan Cara Menghindarinya)",
       excerpt: "Tutorial hell, gonta-ganti bahasa, dan perfeksionisme — jebakan yang membuat progres mandek.",
       content: "<p>Dari ribuan jam mentoring, pola kesalahan ini terus berulang.</p><ol><li><strong>Tutorial hell</strong> — menonton tanpa membangun. Solusi: aturan 1:2, satu jam nonton, dua jam coding.</li><li><strong>Gonta-ganti bahasa</strong> — kuasai satu bahasa sampai bisa membuat proyek.</li><li><strong>Takut error</strong> — error adalah kurikulum tersembunyi.</li><li><strong>Belajar sendirian</strong> — bergabung dengan komunitas mempercepat 2x lipat.</li><li><strong>Perfeksionisme</strong> — rilis versi jelek dulu, perbaiki kemudian.</li><li><strong>Mengabaikan Git</strong> — commit kecil setiap hari.</li><li><strong>Tidak membaca dokumentasi</strong> — dokumentasi adalah sumber kebenaran.</li></ol>",
-      hue: 32, categoryId: "ca-karir", tags: ["mindset", "coding"], authorId: "u-admin", status: "published",
+      hue: 32, categoryId: "ca-karir", tags: ["mindset", "coding"], authorId: "u-super", status: "published",
       publishedAt: daysAgo(12), seoTitle: "Kesalahan Belajar Coding", seoDesc: "7 kesalahan klasik pemula programming.", views: 862,
     },
     {
       id: "ar3", slug: "mysql-indexing-dasar", title: "MySQL Indexing untuk Pemula: Query 40x Lebih Cepat",
       excerpt: "Kapan membuat index, jenis-jenis index, dan cara membaca EXPLAIN tanpa pusing.",
       content: "<p>Query lambat jarang disebabkan hardware — biasanya karena table scan.</p><pre><code>EXPLAIN SELECT * FROM orders WHERE user_id = 1024;</code></pre><p>Jika kolom <code>type</code> menunjukkan <code>ALL</code>, itu table scan. Tambahkan index:</p><pre><code>ALTER TABLE orders ADD INDEX idx_user (user_id);</code></pre><h3>Aturan praktis</h3><ul><li>Index kolom yang sering muncul di WHERE dan JOIN</li><li>Jangan over-index: setiap index memperlambat INSERT</li><li>Gunakan composite index dengan urutan selektivitas tinggi dulu</li></ul>",
-      hue: 204, categoryId: "ca-db", tags: ["mysql", "database", "performance"], authorId: "u-ins1", status: "published",
+      hue: 204, categoryId: "ca-db", tags: ["mysql", "database", "performance"], authorId: "u-super", status: "published",
       publishedAt: daysAgo(3), seoTitle: "MySQL Indexing Dasar", seoDesc: "Panduan index MySQL untuk query cepat.", views: 540,
     },
   ];
   const news: NewsItem[] = [
-    { id: "nw1", slug: "kmsit-buka-lab-komputer-baru", title: "KMSIT Buka Lab Komputer Baru Berkapasitas 40 Workstation", excerpt: "Lab baru dilengkapi PC dual-monitor dan jaringan 10 Gbps untuk kelas offline jaringan & data.", hue: 168, categoryId: "cn-kampus", authorId: "u-admin", status: "published", publishedAt: daysAgo(4), seoTitle: "Lab Komputer Baru KMSIT", seoDesc: "KMSIT membuka lab komputer baru.", views: 930, content: "<p>Per 1 Februari, lab komputer KMSIT resmi beroperasi dengan 40 workstation Ryzen 7, dual monitor, dan backbone 10 Gbps. Lab ini diprioritaskan untuk kelas jaringan, Mikrotik, dan praktikum data.</p><p>Jadwal open lab: Senin–Jumat 09.00–21.00 WIB.</p>" },
-    { id: "nw2", slug: "kemitraan-sertifikasi-mtcna", title: "KMSIT Jalin Kemitraan Program Persiapan Sertifikasi MTCNA", excerpt: "Lulusan kelas jaringan kini mendapat voucher diskon 30% ujian MTCNA resmi.", hue: 204, categoryId: "cn-kerjasama", authorId: "u-admin", status: "published", publishedAt: daysAgo(9), seoTitle: "Kemitraan MTCNA", seoDesc: "Kemitraan sertifikasi jaringan.", views: 615, content: "<p>KMSIT resmi bekerja sama dengan lembaga pelatihan resmi Mikrotik. Lulusan kelas Jaringan Komputer & Mikrotik Dasar berhak atas voucher diskon 30% untuk ujian MTCNA.</p>" },
-    { id: "nw3", slug: "wisuda-batch-12", title: "128 Lulusan Batch 12 Diwisuda, 62% Langsung Terserap Industri", excerpt: "Tingkat serapan kerja tertinggi sejak program bootcamp berjalan.", hue: 32, categoryId: "cn-kampus", authorId: "u-admin", status: "published", publishedAt: daysAgo(16), seoTitle: "Wisuda Batch 12", seoDesc: "Wisuda 128 lulusan KMSIT.", views: 1450, content: "<p>Wisuda batch 12 meluluskan 128 siswa dari program web development, jaringan, dan data. Sebanyak 62% lulusan telah menerima tawaran kerja dalam 60 hari setelah lulus.</p>" },
+    { id: "nw1", slug: "kmsit-buka-lab-komputer-baru", title: "KMSIT Buka Lab Komputer Baru Berkapasitas 40 Workstation", excerpt: "Lab baru dilengkapi PC dual-monitor dan jaringan 10 Gbps untuk kelas offline jaringan & data.", hue: 168, categoryId: "cn-kampus", authorId: "u-super", status: "published", publishedAt: daysAgo(4), seoTitle: "Lab Komputer Baru KMSIT", seoDesc: "KMSIT membuka lab komputer baru.", views: 930, content: "<p>Per 1 Februari, lab komputer KMSIT resmi beroperasi dengan 40 workstation Ryzen 7, dual monitor, dan backbone 10 Gbps. Lab ini diprioritaskan untuk kelas jaringan, Mikrotik, dan praktikum data.</p><p>Jadwal open lab: Senin–Jumat 09.00–21.00 WIB.</p>" },
+    { id: "nw2", slug: "kemitraan-sertifikasi-mtcna", title: "KMSIT Jalin Kemitraan Program Persiapan Sertifikasi MTCNA", excerpt: "Lulusan kelas jaringan kini mendapat voucher diskon 30% ujian MTCNA resmi.", hue: 204, categoryId: "cn-kerjasama", authorId: "u-super", status: "published", publishedAt: daysAgo(9), seoTitle: "Kemitraan MTCNA", seoDesc: "Kemitraan sertifikasi jaringan.", views: 615, content: "<p>KMSIT resmi bekerja sama dengan lembaga pelatihan resmi Mikrotik. Lulusan kelas Jaringan Komputer & Mikrotik Dasar berhak atas voucher diskon 30% untuk ujian MTCNA.</p>" },
+    { id: "nw3", slug: "wisuda-batch-12", title: "128 Lulusan Batch 12 Diwisuda, 62% Langsung Terserap Industri", excerpt: "Tingkat serapan kerja tertinggi sejak program bootcamp berjalan.", hue: 32, categoryId: "cn-kampus", authorId: "u-super", status: "published", publishedAt: daysAgo(16), seoTitle: "Wisuda Batch 12", seoDesc: "Wisuda 128 lulusan KMSIT.", views: 1450, content: "<p>Wisuda batch 12 meluluskan 128 siswa dari program web development, jaringan, dan data. Sebanyak 62% lulusan telah menerima tawaran kerja dalam 60 hari setelah lulus.</p>" },
   ];
   const tutorials: Tutorial[] = [
-    { id: "tu1", slug: "install-ubuntu-server-vps", title: "Cara Install & Setup Ubuntu Server di VPS", description: "Dari SSH pertama sampai firewall UFW dan user non-root.", hue: 262, categoryId: "ct-server", tags: ["linux", "vps"], authorId: "u-ins2", youtubeId: "qiQR5rTSshw", status: "published", publishedAt: daysAgo(5), views: 720, content: "<h3>1. SSH pertama</h3><pre><code>ssh root@IP_VPS</code></pre><h3>2. Buat user non-root</h3><pre><code>adduser kmsit\nusermod -aG sudo kmsit</code></pre><h3>3. Firewall UFW</h3><pre><code>ufw allow OpenSSH\nufw enable</code></pre><p>Server siap dipakai. Lanjutkan dengan install Nginx dan SSL gratis.</p>" },
-    { id: "tu2", slug: "react-router-dasar", title: "React Router dalam 15 Menit", description: "Routing, dynamic params, dan nested layout di React.", hue: 168, categoryId: "ct-frontend", tags: ["react", "routing"], authorId: "u-ins1", youtubeId: "w7ejDZ8SWv8", status: "published", publishedAt: daysAgo(11), views: 1105, content: "<pre><code>import { BrowserRouter, Routes, Route } from 'react-router-dom';\n\n&lt;BrowserRouter&gt;\n  &lt;Routes&gt;\n    &lt;Route path=\"/courses/:slug\" element={&lt;Detail/&gt;} /&gt;\n  &lt;/Routes&gt;\n&lt;/BrowserRouter&gt;</code></pre><p>Gunakan <code>useParams()</code> untuk membaca <code>:slug</code> dan <code>useNavigate()</code> untuk redirect.</p>" },
-    { id: "tu3", slug: "git-branching-workflow", title: "Git Branching Workflow untuk Tim Kecil", description: "Strategi branch sederhana: main, develop, dan feature branch.", hue: 32, categoryId: "ct-tools", tags: ["git", "workflow"], authorId: "u-ins1", status: "published", publishedAt: daysAgo(18), views: 689, content: "<ul><li><code>main</code> — selalu deployable</li><li><code>develop</code> — integrasi fitur</li><li><code>feature/nama-fitur</code> — satu fitur, satu branch</li></ul><pre><code>git checkout -b feature/payment\ngit push -u origin feature/payment</code></pre><p>Wajib code review sebelum merge ke develop.</p>" },
+    { id: "tu1", slug: "install-ubuntu-server-vps", title: "Cara Install & Setup Ubuntu Server di VPS", description: "Dari SSH pertama sampai firewall UFW dan user non-root.", hue: 262, categoryId: "ct-server", tags: ["linux", "vps"], authorId: "u-super", youtubeId: "qiQR5rTSshw", status: "published", publishedAt: daysAgo(5), views: 720, content: "<h3>1. SSH pertama</h3><pre><code>ssh root@IP_VPS</code></pre><h3>2. Buat user non-root</h3><pre><code>adduser kmsit\nusermod -aG sudo kmsit</code></pre><h3>3. Firewall UFW</h3><pre><code>ufw allow OpenSSH\nufw enable</code></pre><p>Server siap dipakai. Lanjutkan dengan install Nginx dan SSL gratis.</p>" },
+    { id: "tu2", slug: "react-router-dasar", title: "React Router dalam 15 Menit", description: "Routing, dynamic params, dan nested layout di React.", hue: 168, categoryId: "ct-frontend", tags: ["react", "routing"], authorId: "u-super", youtubeId: "w7ejDZ8SWv8", status: "published", publishedAt: daysAgo(11), views: 1105, content: "<pre><code>import { BrowserRouter, Routes, Route } from 'react-router-dom';\n\n&lt;BrowserRouter&gt;\n  &lt;Routes&gt;\n    &lt;Route path=\"/courses/:slug\" element={&lt;Detail/&gt;} /&gt;\n  &lt;/Routes&gt;\n&lt;/BrowserRouter&gt;</code></pre><p>Gunakan <code>useParams()</code> untuk membaca <code>:slug</code> dan <code>useNavigate()</code> untuk redirect.</p>" },
+    { id: "tu3", slug: "git-branching-workflow", title: "Git Branching Workflow untuk Tim Kecil", description: "Strategi branch sederhana: main, develop, dan feature branch.", hue: 32, categoryId: "ct-tools", tags: ["git", "workflow"], authorId: "u-super", status: "published", publishedAt: daysAgo(18), views: 689, content: "<ul><li><code>main</code> — selalu deployable</li><li><code>develop</code> — integrasi fitur</li><li><code>feature/nama-fitur</code> — satu fitur, satu branch</li></ul><pre><code>git checkout -b feature/payment\ngit push -u origin feature/payment</code></pre><p>Wajib code review sebelum merge ke develop.</p>" },
   ];
   const programs: Program[] = [
     { id: "pr1", slug: "program-fullstack-bootcamp", title: "Program Full-Stack Bootcamp 12 Minggu", description: "Jalur intensif jadi web developer: HTML sampai deployment + magang partner.", hue: 168, categoryId: "cp-bootcamp", duration: "12 minggu", courseIds: [cWeb, cData], status: "published" },
@@ -412,19 +383,11 @@ export function buildSeedDB(superAdmin: { name: string; email: string; password:
   ];
 
   const notifications: Notice[] = [
-    { id: "nt1", userId: "u-stu1", title: "Pembayaran berhasil", body: "INV-2025-0117 untuk kelas Jaringan Komputer & Mikrotik Dasar telah dikonfirmasi.", date: daysAgo(20), read: true },
-    { id: "nt2", userId: "u-stu1", title: "Sertifikat terbit", body: "Selamat! Sertifikat UI/UX Design dengan Figma siap diunduh.", date: daysAgo(9), read: false },
-    { id: "nt3", userId: "u-ins1", title: "Penjualan baru", body: "Full-Stack Web Development Bootcamp terjual 1x (Rp450.000).", date: daysAgo(5), read: false },
-    { id: "nt4", userId: "u-ins1", title: "Permintaan pencairan", body: "Permintaan pencairan Rp300.000 sedang menunggu persetujuan Super Admin.", date: daysAgo(1), read: false },
-    { id: "nt5", userId: "u-super", title: "Pencairan menunggu", body: "1 permintaan pencairan instruktur menunggu persetujuan.", date: daysAgo(1), read: false },
+    { id: "nt0", userId: "u-super", title: "Instalasi selesai", body: "Website berhasil di-install dan installer dikunci. Selamat mengelola!", date: new Date().toISOString(), read: false },
   ];
   const logs: ActivityLog[] = [
-    { id: "lg1", userId: "u-admin", userName: "Sari Wulandari", action: "article_published", detail: "Artikel “Roadmap Web Developer 2025” diterbitkan", date: daysAgo(6) },
-    { id: "lg2", userId: "u-ins1", userName: "Rizky Ramadhan", action: "course_created", detail: "Kelas “Data Science dengan Python” dibuat", date: daysAgo(90) },
-    { id: "lg3", userId: "u-stu3", userName: "Putri Maharani", action: "payment_received", detail: "Pembayaran INV-2025-0168 (Rp350.000) diterima", date: daysAgo(8) },
-    { id: "lg4", userId: "u-super", userName: "Super Admin", action: "withdrawal_approved", detail: "Pencairan WD-001 (Rp150.000) disetujui", date: daysAgo(6) },
-    { id: "lg5", userId: "u-ins3", userName: "Nadia Fitriani", action: "certificate_issued", detail: "Sertifikat KMSIT-2025-8F42K1 diterbitkan", date: daysAgo(9) },
-    { id: "lg6", userId: "u-super", userName: "Super Admin", action: "settings_changed", detail: "Pengaturan website diperbarui", date: daysAgo(2) },
+    { id: "lg0", userId: "u-super", userName: superAdmin.name, action: "site_installed", detail: "Website di-install: 15 migrasi, 8 seeder, Super Admin dibuat", date: new Date().toISOString() },
+    { id: "lg1", userId: "u-super", userName: superAdmin.name, action: "content_seeded", detail: "Konten starter (kelas, artikel, berita, tutorial) dimuat", date: new Date().toISOString() },
   ];
   const testimonials: Testimonial[] = [
     { id: "ts1", name: "Andi Wijaya", role: "Frontend Developer — Tokopedia", text: "Kurikulumnya paling terstruktur dari semua bootcamp yang saya coba. Quiz-nya bikin materi benar-benar nempel.", rating: 5 },
@@ -432,13 +395,36 @@ export function buildSeedDB(superAdmin: { name: string; email: string; password:
     { id: "ts3", name: "Gilang Prasetyo", role: "Data Analyst Intern", text: "Instruktur responsif banget. Sertifikatnya bisa diverifikasi online, HR langsung percaya.", rating: 4 },
   ];
 
+  // Struktur organisasi — dikelola via CMS (Dashboard → CMS → Struktur Organisasi)
+  const orgUnits: OrgUnit[] = [
+    { id: "ou1", name: "Dewan Pengurus", tagline: "Pimpinan & tata kelola lembaga", level: "board", order: 1 },
+    { id: "ou2", name: "Divisi Akademik", tagline: "Kurikulum, instruktur, dan penjaminan mutu", level: "division", order: 2 },
+    { id: "ou3", name: "Divisi Teknologi & Sistem Informasi", tagline: "Platform LMS, infrastruktur, dan keamanan", level: "division", order: 3 },
+    { id: "ou4", name: "Divisi Operasional & Kemitraan", tagline: "Lab, administrasi, dan hubungan industri", level: "division", order: 4 },
+  ];
+  const orgMembers: OrgMember[] = [
+    { id: "om1", unitId: "ou1", name: "Hendra Gunawan", position: "Ketua Umum", order: 1 },
+    { id: "om2", unitId: "ou1", name: "Lestari Widuri", position: "Wakil Ketua", order: 2 },
+    { id: "om3", unitId: "ou1", name: "Agus Salim", position: "Sekretaris", order: 3 },
+    { id: "om4", unitId: "ou1", name: "Ratna Dewi", position: "Bendahara", order: 4 },
+    { id: "om5", unitId: "ou2", name: "Mirza Hakim", position: "Kepala Divisi", order: 1 },
+    { id: "om6", unitId: "ou2", name: "Salsabila Putri", position: "Pengembang Kurikulum", order: 2 },
+    { id: "om7", unitId: "ou2", name: "Dimas Anggara", position: "Penjaminan Mutu", order: 3 },
+    { id: "om8", unitId: "ou3", name: "Yusuf Maulana", position: "Kepala Divisi", order: 1 },
+    { id: "om9", unitId: "ou3", name: "Karina Ayu", position: "Pengembang Sistem", order: 2 },
+    { id: "om10", unitId: "ou3", name: "Bagus Wicaksono", position: "Infrastruktur & Jaringan", order: 3 },
+    { id: "om11", unitId: "ou4", name: "Tania Rahma", position: "Kepala Divisi", order: 1 },
+    { id: "om12", unitId: "ou4", name: "Reza Fahlevi", position: "Hubungan Industri", order: 2 },
+  ];
+
   return {
-    version: 1, installed: true, installedAt: new Date().toISOString(), locked: true,
+    version: 2, installed: true, installedAt: new Date().toISOString(), locked: true,
     settings: {
       siteName: "KMSIT Computer", slogan: "Belajar Teknologi, Naik Level.",
       description: "Platform LMS & CMS untuk kelas online, tutorial, artikel, berita, quiz, dan sertifikat digital.",
       email: "halo@kmsit.id", phone: "(021) 555-0199", whatsapp: "6281234567890",
       address: "Jl. Pendidikan Teknologi No. 12, Jakarta Selatan", timezone: "Asia/Jakarta",
+      logoUrl: "", faviconUrl: "", mapLat: "-6.2614927", mapLng: "106.8106253", mapLabel: "KMSIT Computer — Kampus Utama",
       language: "id", currency: "IDR", maintenanceMode: false, registrationOpen: true,
       footerText: "© 2025 KMSIT Computer. Seluruh hak cipta dilindungi.",
       social: { instagram: "https://instagram.com/kmsit", youtube: "https://youtube.com/@kmsit", facebook: "https://facebook.com/kmsit", github: "https://github.com/kmsit" },
@@ -471,6 +457,7 @@ export function buildSeedDB(superAdmin: { name: string; email: string; password:
     },
     courses, quizzes, enrollments, attempts, certificates, articles, news, tutorials, programs, pages,
     homeSections, menus, media, payments, walletTx, withdrawals, notifications, logs, testimonials,
+    orgUnits, orgMembers,
   };
 }
 
@@ -484,7 +471,7 @@ export function loadDB(): DB | null {
     const raw = localStorage.getItem(DB_KEY);
     if (!raw) return null;
     const db = JSON.parse(raw) as DB;
-    return db.version === 1 ? db : null;
+    return db.version === 2 ? db : null;
   } catch { return null; }
 }
 export function saveDB(db: DB) { try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch { /* storage full */ } }
