@@ -47,7 +47,7 @@ function Terminal() {
     <div className="rounded-2xl border border-ink-700 bg-ink-950/95 shadow-pop overflow-hidden scanline relative">
       <div className="flex items-center gap-1.5 px-4 h-9 border-b border-white/5 bg-white/[0.03]">
         <span className="w-2.5 h-2.5 rounded-full bg-bad-500/80" /><span className="w-2.5 h-2.5 rounded-full bg-warn-500/80" /><span className="w-2.5 h-2.5 rounded-full bg-ok-500/80" />
-        <span className="ml-3 text-[11px] font-mono text-ink-400">kmsit — siswa@kmsit.id</span>
+        <span className="ml-3 text-[11px] font-mono text-ink-400">kmsit — learning shell</span>
       </div>
       <div className="p-5 font-mono text-[13px] leading-7 min-h-[196px]">
         {TERM_LINES.map((l, i) => {

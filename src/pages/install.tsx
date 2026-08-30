@@ -26,7 +26,7 @@ const MIGRATIONS = [
   "0010_create_programs_pages", "0011_create_menus_media", "0012_create_payments_wallets_withdrawals",
   "0013_create_integrations_tables", "0014_create_notifications_activity_logs", "0015_create_home_sections",
 ];
-const SEEDERS = ["RoleSeeder", "PermissionSeeder", "CategorySeeder", "DemoCourseSeeder", "DemoContentSeeder", "HomeSectionSeeder", "MenuSeeder", "SettingSeeder"];
+const SEEDERS = ["RoleSeeder", "PermissionSeeder", "CategorySeeder", "CourseSeeder", "ContentSeeder", "HomeSectionSeeder", "MenuSeeder", "SettingSeeder"];
 
 export function InstallPage() {
   const { install, db } = useApp();
@@ -197,7 +197,7 @@ export function InstallPage() {
               </div>
             ))}
           </div>
-          {seedDone >= SEEDERS.length && <p className="mt-4 text-sm font-bold text-ok-500 flex items-center gap-2"><Check size={15} />Role, permission, kategori, dan konten demo berhasil dibuat.</p>}
+          {seedDone >= SEEDERS.length && <p className="mt-4 text-sm font-bold text-ok-500 flex items-center gap-2"><Check size={15} />Role, permission, kategori, dan konten starter berhasil dibuat. Hanya Super Admin yang memiliki akun — buat Admin & Instruktur dari dashboard.</p>}
         </div>
       )}
       {step === 6 && (
