@@ -1,11 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   buildSeedDB, isValidHex, loadDB, loadSession, saveDB, saveSession, shadeScale, uid, wipeAll,
-  type DB, type Lang, type User,
+  type DB, type Lang, type Role, type User,
 } from "./db";
 import { translate } from "./i18n";
+import { API_URL, apiConfigured, checkApiHealth } from "./api";
+import { AuthApi, InstallApi } from "./services";
 
 export interface Toast { id: string; msg: string; tone: "ok" | "bad" | "info" | "warn"; }
+export interface ApiState { enabled: boolean; baseUrl: string; online: boolean | null; detail: string; }
 
 interface Store {
   db: DB | null;
@@ -13,10 +16,12 @@ interface Store {
   theme: "light" | "dark";
   lang: Lang;
   toasts: Toast[];
+  api: ApiState;
+  checkApi: () => Promise<ApiState>;
   setTheme: (t: "light" | "dark") => void;
   setLang: (l: Lang) => void;
   update: (fn: (d: DB) => void) => void;
-  login: (email: string, pw: string) => string | null;
+  login: (email: string, pw: string) => Promise<string | null>;
   register: (name: string, email: string, pw: string) => string | null;
   googleSignIn: (name: string, email: string) => string | null;
   logout: () => void;
@@ -86,15 +91,50 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const user = useMemo(() => (db && sessionId ? db.users.find((u) => u.id === sessionId) ?? null : null), [db, sessionId]);
 
-  const login = useCallback((email: string, pw: string): string | null => {
+  // ── Status koneksi Laravel API + MySQL (dari VITE_API_URL di .env) ───────
+  const [api, setApi] = useState<ApiState>({ enabled: apiConfigured(), baseUrl: API_URL, online: null, detail: "" });
+  const checkApi = useCallback(async () => {
+    const r = await checkApiHealth();
+    const next: ApiState = { enabled: apiConfigured(), baseUrl: API_URL, online: r.online, detail: r.detail };
+    setApi(next);
+    return next;
+  }, []);
+  useEffect(() => { if (apiConfigured()) void checkApi(); }, [checkApi]);
+
+  const login = useCallback(async (email: string, pw: string): Promise<string | null> => {
     if (!db) return "not-installed";
+
+    // Mode API: otentikasi lewat Laravel (Sanctum) → MySQL.
+    if (api.online) {
+      try {
+        const remote = await AuthApi.login(email, pw);
+        const role = (["super_admin", "admin", "instructor", "student"].includes(remote.role) ? remote.role : "student") as Role;
+        const mirror: User = {
+          id: String(remote.id), name: remote.name, email: remote.email.toLowerCase(),
+          password: `api:${remote.id}`, role, color: remote.color ?? "#0e8a75",
+          joined: new Date().toISOString(), status: (remote.status as "active" | "suspended") ?? "active",
+        };
+        update((d) => {
+          const i = d.users.findIndex((x) => x.email.toLowerCase() === mirror.email);
+          if (i >= 0) d.users[i] = { ...d.users[i], ...mirror, password: d.users[i].password };
+          else d.users.push(mirror);
+        });
+        saveSession(mirror.id); setSessionId(mirror.id);
+        toast(translate(lang, "toast.loginOk"), "ok");
+        return null;
+      } catch (e) {
+        return e instanceof Error ? e.message : translate(lang, "toast.loginFail");
+      }
+    }
+
+    // Mode lokal tertanam (tanpa backend / VITE_API_URL kosong)
     const u = db.users.find((x) => x.email.toLowerCase() === email.trim().toLowerCase());
     if (!u || u.password !== pw) return translate(lang, "toast.loginFail");
     if (u.status === "suspended") return "Akun ditangguhkan. Hubungi administrator.";
     saveSession(u.id); setSessionId(u.id);
     toast(translate(lang, "toast.loginOk"), "ok");
     return null;
-  }, [db, lang, toast]);
+  }, [db, api.online, lang, toast, update]);
 
   const register = useCallback((name: string, email: string, pw: string): string | null => {
     if (!db) return "not-installed";
@@ -168,14 +208,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     fresh.locked = true;
     localStorage.setItem("kmsit_installed_lock", new Date().toISOString());
     saveDB(fresh); setDb(fresh);
-  }, []);
+    // Sinkronkan instalasi ke Laravel + MySQL bila Mode API aktif (best-effort).
+    if (api.online) {
+      InstallApi.run({ admin, site: site as unknown as Record<string, string>, database: { driver: "mysql" } }).catch(() => { /* tetap sukses lokal */ });
+    }
+  }, [api.online]);
 
   const reset = useCallback(() => {
     wipeAll(); setDb(null); setSessionId(null);
   }, []);
 
   const value: Store = {
-    db, user, theme, lang, toasts,
+    db, user, theme, lang, toasts, api, checkApi,
     setTheme: setThemeState, setLang: setLangState,
     update, login, register, googleSignIn, logout, toast, dismissToast, t, can, notify, log, install, reset,
   };

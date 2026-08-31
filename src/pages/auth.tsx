@@ -104,7 +104,7 @@ export function GoogleButton({ label, onDone }: { label: string; onDone?: () => 
 }
 
 export function LoginPage() {
-  const { login, db } = useApp();
+  const { login } = useApp();
   const nav = useNavigate();
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -113,12 +113,11 @@ export function LoginPage() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true); setErr("");
-    window.setTimeout(() => {
-      const res = login(email, pw);
+    window.setTimeout(async () => {
+      const res = await login(email, pw);
       setBusy(false);
       if (res) { setErr(res); return; }
-      const u = db?.users.find((x) => x.email.toLowerCase() === email.trim().toLowerCase());
-      nav(u ? roleBase(u.role) : "/");
+      nav("/dashboard"); // RoleRedirect mengarahkan ke dashboard sesuai role
     }, 450);
   };
   return (
