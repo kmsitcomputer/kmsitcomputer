@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /learn/
+Disallow: /install
+
+Sitemap: https://domainanda.com/sitemap.xml
