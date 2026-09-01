@@ -5,7 +5,9 @@ import {
   Users, UserCog, Award, Briefcase, Home, Info, Menu as MenuIcon, Wallet, CreditCard, ArrowLeftRight,
   Banknote, Youtube, Video, CalendarCheck, Landmark, Globe, Settings, Search as SearchIcon, Bell,
   LogOut, Moon, Sun, ChevronDown, ChevronRight, X, Shield, Languages, Activity, Terminal, PanelLeft, Network,
+  ShoppingBag, Package, ShoppingCart, Truck,
 } from "lucide-react";
+import { useCartCount } from "../pages/shop";
 import { useApp } from "../lib/store";
 import { ago, type MenuItem, type Role } from "../lib/db";
 import { Avatar, Btn, cx, Logo, SearchInput, useOutside } from "./ui";
@@ -62,6 +64,16 @@ function NavItem({ item }: { item: MenuItem }) {
   return <SmartLink to={item.url} className="px-3 py-2 rounded-lg text-sm font-semibold text-ink-600 dark:text-ink-200 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">{item.label}</SmartLink>;
 }
 
+function CartButton() {
+  const n = useCartCount();
+  return (
+    <Link to="/cart" title="Keranjang belanja" className="relative rounded-lg p-2 text-ink-500 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 hover:text-brand-600 dark:hover:text-brand-300 transition-colors">
+      <ShoppingCart size={18} />
+      {n > 0 && <span className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] px-1 rounded-full bg-accent-500 text-ink-950 text-[10px] font-bold flex items-center justify-center shadow-sm">{n > 99 ? "99+" : n}</span>}
+    </Link>
+  );
+}
+
 export function PublicShell({ children }: { children?: React.ReactNode }) {
   const { db, user, t, logout } = useApp();
   const [mobile, setMobile] = useState(false);
@@ -87,6 +99,7 @@ export function PublicShell({ children }: { children?: React.ReactNode }) {
             className="hidden sm:inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-ink-200 dark:border-ink-700 text-sm text-ink-400 hover:border-brand-400 transition-colors bg-card dark:bg-ink-900">
             <SearchIcon size={14} /><span className="pr-4">{t("act.search")}</span>
           </button>
+          <CartButton />
           <LangToggle />
           <ThemeToggle />
           {user ? (
@@ -223,6 +236,10 @@ export function dashMenu(role: Role): DashGroup[] {
       { to: "org-cms", labelKey: "dash.org", icon: <Network size={17} /> },
       { to: "menus", labelKey: "dash.menus", icon: <MenuIcon size={17} /> },
     ]),
+    g("dash.shop", [
+      { to: "products", labelKey: "dash.products", icon: <ShoppingBag size={17} /> },
+      { to: "orders", labelKey: "dash.orders", icon: <Package size={17} /> },
+    ]),
     g("dash.transactions", [
       { to: "payments", labelKey: "dash.payments", icon: <CreditCard size={17} /> },
       { to: "transactions", labelKey: "dash.courseTx", icon: <ArrowLeftRight size={17} /> },
@@ -232,6 +249,7 @@ export function dashMenu(role: Role): DashGroup[] {
       { to: "youtube", labelKey: "dash.youtube", icon: <Youtube size={17} /> },
       { to: "zoom", labelKey: "dash.zoom", icon: <Video size={17} /> },
       { to: "gmeet", labelKey: "dash.gmeet", icon: <CalendarCheck size={17} /> },
+      { to: "rajaongkir", labelKey: "dash.rajaongkir", icon: <Truck size={17} /> },
       { to: "gateway", labelKey: "dash.gateway", icon: <Landmark size={17} /> },
     ]),
     g("dash.settings", [
@@ -266,6 +284,10 @@ export function dashMenu(role: Role): DashGroup[] {
       { to: "about-cms", labelKey: "dash.about", icon: <Info size={17} /> },
       { to: "org-cms", labelKey: "dash.org", icon: <Network size={17} /> },
     ]),
+    g("dash.shop", [
+      { to: "products", labelKey: "dash.products", icon: <ShoppingBag size={17} /> },
+      { to: "orders", labelKey: "dash.orders", icon: <Package size={17} /> },
+    ]),
     g("dash.transactions", [
       { to: "payments", labelKey: "dash.payments", icon: <CreditCard size={17} /> },
       { to: "transactions", labelKey: "dash.courseTx", icon: <ArrowLeftRight size={17} /> },
@@ -290,6 +312,7 @@ export function dashMenu(role: Role): DashGroup[] {
       { to: "certificates", labelKey: "dash.certificates", icon: <Award size={17} /> },
     ]),
     g("dash.transactions", [{ to: "payments", labelKey: "dash.payments", icon: <CreditCard size={17} /> }]),
+    g("dash.shop", [{ to: "my-orders", labelKey: "dash.myOrders", icon: <Package size={17} /> }]),
   ];
 }
 

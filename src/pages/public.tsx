@@ -995,6 +995,7 @@ const LandmarkMini = () => <svg width="16" height="16" viewBox="0 0 24 24" fill=
 export function CurriculumList({ course, openMod, setOpenMod, enrolled, completed = [] }: { course: Course; openMod: string | null; setOpenMod: (v: string | null) => void; enrolled: boolean; completed?: string[] }) {
   const { user } = useApp();
   const nav = useNavigate();
+  const isOwnerOrMod = !!user && (user.role === "super_admin" || user.role === "admin" || course.instructorId === user.id);
   return (
     <div className="space-y-3">
       {course.modules.map((m, mi) => (
@@ -1007,7 +1008,8 @@ export function CurriculumList({ course, openMod, setOpenMod, enrolled, complete
           {(openMod === m.id || openMod === null) && (
             <div className="border-t border-ink-100 dark:border-ink-800">
               {m.lessons.map((l) => {
-                const accessible = enrolled || l.free || (user?.role !== "student" && !!user);
+                // Kelas berbayar: hanya terbuka setelah pembayaran (enrolled), lesson preview gratis, atau owner/moderator.
+                const accessible = enrolled || !!l.free || isOwnerOrMod;
                 const done = completed.includes(l.id);
                 return (
                   <div key={l.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-ink-100/60 dark:border-ink-800/60 last:border-0 text-sm">
