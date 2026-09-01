@@ -54,6 +54,14 @@ const RolesManager = lazyNamed(() => import("./pages/dash-system"), (m) => m.Rol
 const SystemPage = lazyNamed(() => import("./pages/dash-system"), (m) => m.SystemPage);
 const ActivityPage = lazyNamed(() => import("./pages/dash-system"), (m) => m.ActivityPage);
 const IntegrationsPage = lazyNamed(() => import("./pages/dash-system"), (m) => m.IntegrationsPage);
+const RajaOngkirPage = lazyNamed(() => import("./pages/dash-system"), (m) => m.RajaOngkirPage);
+const ShopPage = lazyNamed(() => import("./pages/shop"), (m) => m.ShopPage);
+const ProductDetailPage = lazyNamed(() => import("./pages/shop"), (m) => m.ProductDetailPage);
+const CartPage = lazyNamed(() => import("./pages/shop"), (m) => m.CartPage);
+const CheckoutPage = lazyNamed(() => import("./pages/shop"), (m) => m.CheckoutPage);
+const ProductsManager = lazyNamed(() => import("./pages/dash-shop"), (m) => m.ProductsManager);
+const OrdersManager = lazyNamed(() => import("./pages/dash-shop"), (m) => m.OrdersManager);
+const MyOrdersPage = lazyNamed(() => import("./pages/dash-shop"), (m) => m.MyOrdersPage);
 
 function PageLoader() {
   return (
@@ -144,6 +152,7 @@ function DashArea() {
       <Route path="zoom" element={<Guard seg="zoom"><IntegrationsPage kind="zoom" /></Guard>} />
       <Route path="gmeet" element={<Guard seg="gmeet"><IntegrationsPage kind="gmeet" /></Guard>} />
       <Route path="gateway" element={<Guard seg="gateway"><GatewayPage /></Guard>} />
+      <Route path="rajaongkir" element={<Guard seg="rajaongkir"><RajaOngkirPage /></Guard>} />
       <Route path="website" element={<Guard seg="website"><WebsiteSettings /></Guard>} />
       <Route path="seo" element={<Guard seg="seo"><SeoSettings /></Guard>} />
       <Route path="language" element={<Guard seg="language"><LanguageSettings /></Guard>} />
@@ -151,6 +160,9 @@ function DashArea() {
       <Route path="roles" element={<Guard seg="roles"><RolesManager /></Guard>} />
       <Route path="system" element={<Guard seg="system"><SystemPage /></Guard>} />
       <Route path="activity" element={<Guard seg="activity"><ActivityPage /></Guard>} />
+      <Route path="products" element={<Guard seg="products"><ProductsManager /></Guard>} />
+      <Route path="orders" element={<Guard seg="orders"><OrdersManager /></Guard>} />
+      <Route path="my-orders" element={<Guard seg="my-orders"><MyOrdersPage /></Guard>} />
       <Route path="*" element={<AccessDenied />} />
     </Routes>
   );
@@ -227,9 +239,12 @@ function Shell() {
             <Route path="/tutorials/:slug" element={<TutorialDetail />} />
             <Route path="/programs" element={<ProgramsPage />} />
             <Route path="/programs/:slug" element={<ProgramDetail />} />
-            <Route path="/page/:slug" element={<CustomPage />} />
-          </Route>
-          <Route path="/dashboard" element={<RoleRedirect />} />
+          <Route path="/page/:slug" element={<CustomPage />} />
+          <Route path="/shop" element={<ShopPage />} />
+          <Route path="/shop/:slug" element={<ProductDetailPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+        </Route>          <Route path="/dashboard" element={<RoleRedirect />} />
           <Route path="/dashboard/:role/*" element={<InstallGate><DashShell><DashArea /></DashShell></InstallGate>} />
           <Route path="*" element={db ? <PublicShell><NotFound /></PublicShell> : <Navigate to="/install" replace />} />
         </Routes>

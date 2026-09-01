@@ -36,6 +36,7 @@ export interface Integrations {
   youtube: { enabled: boolean; channelId: string; apiKey: string };
   zoom: { enabled: boolean; accountId: string; clientId: string; clientSecret: string };
   gmeet: { enabled: boolean; clientId: string; clientSecret: string };
+  rajaongkir: { enabled: boolean; apiKey: string; originProvinceId: string; originCityId: string; couriers: string[] };
 }
 export interface Question {
   id: string; type: "single" | "boolean" | "multiple"; text: string;
@@ -118,6 +119,23 @@ export interface Notice { id: string; userId: string; title: string; body: strin
 export interface ActivityLog { id: string; userId: string; userName: string; action: string; detail: string; date: string; }
 export interface Testimonial { id: string; name: string; role: string; text: string; rating: number; }
 
+export type ProductIcon = "tshirt" | "keyboard" | "mouse" | "book" | "bottle" | "backpack" | "mousepad" | "sticker";
+export interface Product {
+  id: string; slug: string; name: string; category: string; price: number; weight: number; // gram
+  stock: number; sales: number; description: string; hue: number; icon: ProductIcon;
+  status: "published" | "draft"; createdAt: string;
+}
+export interface OrderItem { productId: string; name: string; price: number; qty: number; weight: number; icon: ProductIcon; hue: number; }
+export interface Order {
+  id: string; invoice: string; userId: string; items: OrderItem[];
+  subtotal: number; shippingCost: number; total: number;
+  courier: string; courierService: string; eta: string;
+  address: { name: string; phone: string; address: string; province: string; city: string };
+  payment: { provider: Provider; method: string; mode: "sandbox" | "production" } | null;
+  status: "pending_payment" | "processing" | "packed" | "shipped" | "completed" | "cancelled";
+  date: string;
+}
+
 export interface DB {
   version: number; installed: boolean; installedAt?: string; locked: boolean;
   settings: Settings; gateways: PaymentGateway[]; activeGateway: Provider;
@@ -129,6 +147,7 @@ export interface DB {
   media: MediaItem[]; payments: Payment[]; walletTx: WalletTx[]; withdrawals: Withdrawal[];
   notifications: Notice[]; logs: ActivityLog[]; testimonials: Testimonial[];
   orgUnits: OrgUnit[]; orgMembers: OrgMember[];
+  products: Product[]; orders: Order[];
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -197,6 +216,17 @@ const IMG = {
   lab: "https://image.qwenlm.ai/generated-images/94980cb3-c216-445f-82ed-f14d0517df3a/_result.png",
 };
 export { IMG };
+
+export const SEED_PRODUCTS: Product[] = [
+  { id: "pd1", slug: "hoodie-code-and-coffee", name: "Hoodie KMSIT “Code & Coffee”", category: "Apparel", price: 245000, weight: 600, stock: 40, sales: 0, hue: 168, icon: "tshirt", status: "published", createdAt: daysAgo(30), description: "Hoodie fleece premium 330gsm dengan bordir logo terminal KMSIT. Hangat untuk ngoding sampai pagi — tersedia ukuran S sampai XXL (tulis ukuran di catatan pesanan)." },
+  { id: "pd2", slug: "keyboard-mechanical-tkl", name: "Keyboard Mechanical TKL KMSIT Edition", category: "Gadget", price: 585000, weight: 1100, stock: 15, sales: 0, hue: 204, icon: "keyboard", status: "published", createdAt: daysAgo(26), description: "Tenkeyless hot-swappable, switch linear pre-lubed, keycap PBT double-shot dengan aksen teal. Kabel USB-C coiled disertakan." },
+  { id: "pd3", slug: "mouse-wireless-silent", name: "Mouse Wireless Silent KMSIT", category: "Gadget", price: 165000, weight: 120, stock: 60, sales: 0, hue: 32, icon: "mouse", status: "published", createdAt: daysAgo(22), description: "Klik senyap 90%, sensor 1600 DPI, baterai 12 bulan. Teman terbaik lab komputer dan perpustakaan." },
+  { id: "pd4", slug: "buku-roadmap-web-developer", name: "Buku “Roadmap Web Developer 2025”", category: "Buku", price: 98000, weight: 450, stock: 100, sales: 0, hue: 340, icon: "book", status: "published", createdAt: daysAgo(18), description: "240 halaman full color: urutan belajar dari HTML sampai deployment, lengkap dengan latihan dan checklist mingguan. Ditulis tim akademik KMSIT." },
+  { id: "pd5", slug: "tumbler-developer-750", name: "Tumbler Developer 750ml", category: "Aksesori", price: 89000, weight: 380, stock: 75, sales: 0, hue: 260, icon: "bottle", status: "published", createdAt: daysAgo(14), description: "Stainless steel double-wall, menjaga kopi tetap panas 6 jam. Grafir laser `while(alive) { drink(); code(); }`." },
+  { id: "pd6", slug: "ransel-laptop-15", name: "Ransel Laptop 15” Anti-Air", category: "Aksesori", price: 329000, weight: 900, stock: 25, sales: 0, hue: 120, icon: "backpack", status: "published", createdAt: daysAgo(10), description: "Kompartemen laptop empuk, port USB eksternal, bahan anti-air. Siap menemani kelas offline di lab." },
+  { id: "pd7", slug: "mousepad-xl-deskmat", name: "Deskmat XL Terminal 80×30", category: "Aksesori", price: 75000, weight: 500, stock: 90, sales: 0, hue: 12, icon: "mousepad", status: "published", createdAt: daysAgo(6), description: "Mousepad extended 80×30cm dengan motif grid terminal & shortcut vim. Base karet anti-slip." },
+  { id: "pd8", slug: "sticker-pack-terminal", name: "Sticker Pack Terminal (24 pcs)", category: "Aksesori", price: 35000, weight: 60, stock: 150, sales: 0, hue: 200, icon: "sticker", status: "published", createdAt: daysAgo(3), description: "24 sticker vinyl tahan air: logo shell, maskot KMSIT, dan joke `It works on my machine`. Cocok untuk laptop & tumbler." },
+];
 
 export function buildSeedDB(superAdmin: { name: string; email: string; password: string }): DB {
   // PRODUCTION: hanya Super Admin yang dibuat saat instalasi.
@@ -471,6 +501,7 @@ export function buildSeedDB(superAdmin: { name: string; email: string; password:
       youtube: { enabled: true, channelId: "UC-kmsit-computer", apiKey: "" },
       zoom: { enabled: true, accountId: "", clientId: "", clientSecret: "" },
       gmeet: { enabled: false, clientId: "", clientSecret: "" },
+      rajaongkir: { enabled: true, apiKey: "", originProvinceId: "6", originCityId: "152", couriers: ["jne", "pos", "tiki"] },
     },
     users,
     roles: [
@@ -489,6 +520,8 @@ export function buildSeedDB(superAdmin: { name: string; email: string; password:
     courses, quizzes, enrollments, attempts, certificates, articles, news, tutorials, programs, pages,
     homeSections, menus, media, payments, walletTx, withdrawals, notifications, logs, testimonials,
     orgUnits, orgMembers,
+    products: SEED_PRODUCTS.map((p) => ({ ...p })),
+    orders: [] as Order[],
   };
 }
 
@@ -511,6 +544,17 @@ export function loadDB(): DB | null {
     db.settings = { ...SETTINGS_DEFAULTS, ...db.settings } as DB["settings"];
     if (!db.orgUnits) db.orgUnits = [];
     if (!db.orgMembers) db.orgMembers = [];
+    if (!db.products || db.products.length === 0) db.products = SEED_PRODUCTS.map((p) => ({ ...p }));
+    if (!db.orders) db.orders = [];
+    if (!db.integrations.rajaongkir) {
+      db.integrations.rajaongkir = { enabled: true, apiKey: "", originProvinceId: "6", originCityId: "152", couriers: ["jne", "pos", "tiki"] };
+    }
+    const headerMenu = db.menus.find((m) => m.location === "header");
+    if (headerMenu && !headerMenu.items.some((i) => i.label === "Shop")) {
+      const about = headerMenu.items.findIndex((i) => i.label === "Tentang" || i.label === "About");
+      const item = { id: uid(), label: "Shop", url: "/shop", children: [] };
+      about >= 0 ? headerMenu.items.splice(about, 0, item) : headerMenu.items.push(item);
+    }
     db.version = 2;
     return db;
   } catch { return null; }

@@ -3,9 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Globe, Search, Languages, Users, Shield, Terminal, Activity, Youtube, Video, CalendarCheck,
   Save, AlertTriangle, Plus, Pencil, Trash2, Ban, Lock, Unlock, Database, HardDrive,
-  Palette, ImagePlus, MapPin, Upload, RotateCcw,
+  Palette, ImagePlus, MapPin, Upload, RotateCcw, Truck,
 } from "lucide-react";
 import { useApp } from "../lib/store";
+import { CITIES, getProvinces, PROVINCES, rajaMode } from "../lib/rajaongkir";
 import { fmtDate, fmtDateTime, isValidHex, PERMISSIONS, shadeScale, uid, type Role, type User } from "../lib/db";
 import { Avatar, Badge, Btn, cx, Field, Logo, Modal, SearchInput, Select, statusTone, TextInput, Toggle } from "../components/ui";
 import { DashHead } from "./dash-content";
@@ -521,6 +522,71 @@ export function ActivityPage() {
 }
 
 // ─── Integrations ───────────────────────────────────────────────────────────
+export function RajaOngkirPage() {
+  const { db, update, toast, log } = useApp();
+  const [testing, setTesting] = useState(false);
+  if (!db) return null;
+  const cfg = db.integrations.rajaongkir;
+  const mode = rajaMode(db);
+  const provs = PROVINCES;
+  const originCities = CITIES.filter((x) => x.provinceId === cfg.originProvinceId);
+  return (
+    <div className="space-y-5 max-w-3xl">
+      <DashHead title="RajaOngkir" desc="Perhitungan ongkos kirim real-time untuk Shop — provinsi, kota, kurir, dan tarif" />
+      <SettingsCard title="Koneksi RajaOngkir" onSave={() => { log("integration_updated", "Integrasi RajaOngkir diperbarui"); toast("RajaOngkir disimpan", "ok"); }}>
+        <div className="flex items-center justify-between rounded-xl border border-ink-200 dark:border-ink-700 px-4 py-3 mb-4">
+          <div className="flex items-center gap-3">
+            <span className={cx("w-10 h-10 rounded-lg flex items-center justify-center", cfg.enabled ? "bg-brand-500/12 text-brand-600 dark:text-brand-300" : "bg-ink-100 dark:bg-ink-800 text-ink-400")}><Truck size={20} /></span>
+            <div>
+              <p className="text-sm font-bold text-ink-800 dark:text-ink-50">RajaOngkir API (starter)</p>
+              <p className="text-[11px] font-mono mt-0.5">
+                {mode === "live" ? <span className="text-ok-500">● MODE LIVE — api.rajaongkir.com</span> : <span className="text-warn-600 dark:text-warn-500">◐ MODE SIMULASI — isi API key untuk tarif real</span>}
+              </p>
+            </div>
+          </div>
+          <Toggle checked={cfg.enabled} onChange={(v) => { update((d) => { d.integrations.rajaongkir.enabled = v; }); toast(`RajaOngkir ${v ? "diaktifkan" : "dinonaktifkan"}`, "info"); }} />
+        </div>
+        <div className="grid gap-4">
+          <Field label="API Key RajaOngkir" hint="Daftar gratis di rajaongkir.com → akun → API key (paket starter)">
+            <TextInput value={cfg.apiKey} onChange={(e) => update((d) => { d.integrations.rajaongkir.apiKey = e.target.value; })} placeholder="contoh: a1b2c3d4e5f6…" />
+          </Field>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label="Provinsi asal pengiriman">
+              <Select value={cfg.originProvinceId} onChange={(e) => update((d) => { d.integrations.rajaongkir.originProvinceId = e.target.value; d.integrations.rajaongkir.originCityId = ""; })}>
+                {provs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </Select>
+            </Field>
+            <Field label="Kota asal pengiriman">
+              <Select value={cfg.originCityId} onChange={(e) => update((d) => { d.integrations.rajaongkir.originCityId = e.target.value; })}>
+                <option value="">— pilih kota —</option>
+                {originCities.map((cc) => <option key={cc.id} value={cc.id}>{cc.name}</option>)}
+              </Select>
+            </Field>
+          </div>
+          <Field label="Kurir aktif" hint="ditampilkan sebagai opsi saat checkout">
+            <div className="flex flex-wrap gap-2">
+              {[["jne", "JNE"], ["pos", "POS Indonesia"], ["tiki", "TIKI"]].map(([v, l]) => {
+                const on = cfg.couriers.includes(v);
+                return (
+                  <button key={v} onClick={() => update((d) => { const cur = d.integrations.rajaongkir.couriers; d.integrations.rajaongkir.couriers = on ? cur.filter((x) => x !== v) : [...cur, v]; })}
+                    className={cx("px-4 h-10 rounded-lg border text-[13px] font-bold transition-all", on ? "border-brand-500 bg-brand-50 dark:bg-brand-900/25 text-brand-700 dark:text-brand-300" : "border-ink-200 dark:border-ink-700 text-ink-400")}>
+                    {l}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+          <Btn variant="outline" size="sm" className="w-fit" disabled={testing || !cfg.apiKey} onClick={() => {
+            setTesting(true);
+            void getProvinces(db).then((ps) => { setTesting(false); toast(ps.length > 34 ? "Koneksi RajaOngkir LIVE berhasil ✓" : `Terhubung (${ps.length} provinsi — cek API key untuk mode live)`, "ok"); });
+          }}>{testing ? "Menguji…" : "Tes Koneksi"}</Btn>
+        </div>
+        <p className="mt-4 text-xs text-ink-400 leading-relaxed">Tanpa API key, checkout tetap berfungsi dengan tarif simulasi berbasis berat & jarak. Mode LIVE mengambil tarif resmi JNE/POS/TIKI per kota tujuan.</p>
+      </SettingsCard>
+    </div>
+  );
+}
+
 export function IntegrationsPage({ kind }: { kind: "youtube" | "zoom" | "gmeet" }) {
   const { db, update, toast, log } = useApp();
   if (!db) return null;

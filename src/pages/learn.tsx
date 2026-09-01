@@ -3,10 +3,10 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import confetti from "canvas-confetti";
 import {
   Play, FileText, CheckCircle2, ChevronLeft, ChevronRight, Clock, Award, Download,
-  AlertTriangle, XCircle, QrCode, FileDown, HelpCircle, GraduationCap, Printer, ShieldCheck, ArrowLeft,
+  AlertTriangle, XCircle, QrCode, FileDown, HelpCircle, GraduationCap, Printer, ShieldCheck, ArrowLeft, Lock,
 } from "lucide-react";
 import { useApp } from "../lib/store";
-import { courseLessons, courseProgress, fmtDate, uid, ytThumb, type Lesson, type Quiz } from "../lib/db";
+import { courseLessons, courseProgress, fmtDate, fmtIDR, uid, ytThumb, type Lesson, type Quiz } from "../lib/db";
 import { Badge, Btn, cx, Modal, Progress, YouTubeEmbed } from "../components/ui";
 import { FakeQr } from "./public";
 
@@ -31,13 +31,19 @@ export function LearnPlayer() {
 
   if (!db || !course) return <BlockMsg title="Kelas tidak ditemukan" back="/courses" />;
   const isStudent = user?.role === "student";
-  if (isStudent && !enrollment && !preview) return <BlockMsg title="Kamu belum terdaftar di kelas ini" desc="Enroll terlebih dahulu untuk mengakses materi." back={`/courses/${course.slug}`} />;
-  if (!user) return <BlockMsg title="Silakan masuk terlebih dahulu" back="/login" />;
+  if (!user && !preview) return <BlockMsg title="Silakan masuk terlebih dahulu" back="/login" />;
+  // Kelas berbayar: akses HANYA setelah pembayaran berhasil (enrollment dibuat saat webhook paid).
+  if (course.price > 0 && !enrollment && !preview) {
+    if (isOwnerOrModerator(user, course)) { /* owner/moderator boleh pratinjau */ }
+    else return <LockedPaid course={course} />;
+  }
+  if (course.price === 0 && isStudent && !enrollment && !preview)
+    return <BlockMsg title="Kamu belum terdaftar di kelas ini" desc="Daftar gratis terlebih dahulu untuk mengakses materi." back={`/courses/${course.slug}`} />;
 
   const lessons = courseLessons(course);
   const current = lessons.find((l) => l.id === lessonId) ?? lessons[0];
   const idx = lessons.indexOf(current);
-  const accessible = !isStudent || !!enrollment || current.free;
+  const accessible = !!enrollment || !!current.free || isOwnerOrModerator(user, course);
   const completed = enrollment?.completedLessons ?? [];
   const progress = enrollment ? courseProgress(course, enrollment) : 0;
 
@@ -152,6 +158,27 @@ export function LearnPlayer() {
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+function isOwnerOrModerator(user: { id: string; role: string } | null | undefined, course: { instructorId: string }): boolean {
+  if (!user) return false;
+  return user.role === "super_admin" || user.role === "admin" || course.instructorId === user.id;
+}
+
+function LockedPaid({ course }: { course: { id: string; slug: string; title: string; price: number } }) {
+  return (
+    <div className="min-h-[70vh] flex items-center justify-center p-6">
+      <div className="max-w-md w-full rounded-2xl border border-ink-100 dark:border-ink-800 bg-card dark:bg-ink-900 p-8 text-center shadow-lift">
+        <span className="mx-auto w-14 h-14 rounded-2xl bg-accent-500/15 text-accent-600 dark:text-accent-300 flex items-center justify-center"><Lock size={24} /></span>
+        <p className="mt-4 font-mono text-[12px] text-accent-600 dark:text-accent-300 uppercase tracking-wider">kelas berbayar · akses terkunci</p>
+        <h1 className="mt-2 font-display text-xl font-bold text-ink-900 dark:text-white">{course.title}</h1>
+        <p className="mt-2 text-sm text-ink-400 leading-relaxed">Seluruh materi kelas ini hanya dapat diakses <b className="text-ink-600 dark:text-ink-200">setelah pembayaran berhasil dikonfirmasi</b> oleh payment gateway. Lesson berlabel preview tetap bisa dicoba gratis.</p>
+        <p className="mt-4 font-display text-[26px] font-bold text-brand-700 dark:text-brand-300">{fmtIDR(course.price)}</p>
+        <Link to={`/courses/${course.slug}`} className="block mt-4"><Btn variant="accent" className="w-full" size="lg">Lihat Kelas & Bayar</Btn></Link>
+        <p className="mt-3 text-[11px] font-mono text-ink-400">enrollment terbuka otomatis setelah webhook pembayaran berstatus paid</p>
+      </div>
     </div>
   );
 }
